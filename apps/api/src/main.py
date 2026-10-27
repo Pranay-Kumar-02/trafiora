@@ -8,12 +8,17 @@ from .api.router import api_router
 from .core.config import settings
 
 
+from .core.database import init_db
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager (startup and shutdown events)."""
     # Startup actions
+    await init_db()
     yield
     # Shutdown actions
+
 
 
 app = FastAPI(

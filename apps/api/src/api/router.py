@@ -1,6 +1,6 @@
 """Unified API v1 Router."""
 from fastapi import APIRouter
-from .v1 import capabilities, connections, health, plans, queries
+from .v1 import capabilities, connections, health, plans, queries, scenarios
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -16,3 +16,7 @@ api_router.include_router(queries.router)
 
 # Query Execution Plans
 api_router.include_router(plans.router)
+
+# Workload Scenarios
+api_router.include_router(scenarios.router)
+
