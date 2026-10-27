@@ -1,6 +1,6 @@
 """Unified API v1 Router."""
 from fastapi import APIRouter
-from .v1 import capabilities, connections, diagnosis, experiments, health, plans, queries, scenarios
+from .v1 import capabilities, connections, diagnosis, experiments, health, plans, protection, queries, scenarios
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -25,6 +25,10 @@ api_router.include_router(experiments.router)
 
 # Bottleneck Diagnosis & Recommendations
 api_router.include_router(diagnosis.router)
+
+# Overload Protection & Pool Sizing
+api_router.include_router(protection.router)
+
 
 
 
