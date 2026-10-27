@@ -26,6 +26,8 @@ async def test_postgres_adapter_degradation_when_offline() -> None:
 @pytest.mark.asyncio
 async def test_connections_api_crud_and_masking() -> None:
     """Verifies that connection creation encrypts passwords and lists mask credentials."""
+    from apps.api.src.core.database import init_db
+    await init_db()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         payload = {
@@ -41,7 +43,8 @@ async def test_connections_api_crud_and_masking() -> None:
             "is_disposable_sandbox": False,
         }
         res = await client.post("/api/v1/connections", json=payload)
-        assert res.status_code == 200
+        assert res.status_code == 201
+
         data = res.json()
         assert data["name"] == "Primary Production Replica"
         assert "password" not in data
