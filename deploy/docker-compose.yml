@@ -1,0 +1,79 @@
+services:
+  # Internal Metadata Database (Trafiora State)
+  metadata-db:
+    image: postgres:18.6-alpine
+    container_name: trafiora-metadata-db
+    environment:
+      POSTGRES_USER: trafiora_admin
+      POSTGRES_PASSWORD: trafiora_dev_password
+      POSTGRES_DB: trafiora_metadata
+    ports:
+      - "5432:5432"
+    volumes:
+      - metadata_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trafiora_admin -d trafiora_metadata"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Disposable Target Database (Target for Workload Experiments & Migrations)
+  target-disposable-db:
+    image: postgres:18.6-alpine
+    container_name: trafiora-target-db
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.max=10000
+      -c pg_stat_statements.track=top
+      -c pg_stat_statements.save=on
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: target_dev_password
+      POSTGRES_DB: target_app_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - target_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d target_app_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend Control Plane
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: trafiora-api
+    environment:
+      TRAFIORA_ENV: development
+      TRAFIORA_METADATA_DATABASE_URL: postgresql+psycopg://trafiora_admin:trafiora_dev_password@metadata-db:5432/trafiora_metadata
+      TRAFIORA_MASTER_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      TRAFIORA_JWT_SECRET: dev_jwt_secret_change_in_production
+    ports:
+      - "8000:8000"
+    depends_on:
+      metadata-db:
+        condition: service_healthy
+      target-disposable-db:
+        condition: service_healthy
+
+  # Next.js 16 Web Dashboard
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: trafiora-web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_WS_URL: ws://localhost:8000/api/v1/ws
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  metadata_data:
+  target_data:
