@@ -11,12 +11,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import async_session_factory
+from ..core.security import vault
 from ..models.connection import ConnectionModel
 from ..models.experiment import ExperimentModel
 from ..models.metric import MetricSampleModel
 from ..models.scenario import WorkloadScenarioModel
 from ..schemas.connection import OperationalTier
 from ..schemas.experiment import ExperimentOutcome, ExperimentStatus
+from .pgbench_runner import PgBenchRunner
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,8 @@ class BenchmarkExecutor:
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self._active_runs: Dict[str, asyncio.Task] = {}
         self._cancel_flags: Dict[str, bool] = {}
+        self._runner = PgBenchRunner()
+
 
     @property
     def active_experiment_ids(self) -> List[str]:
@@ -115,6 +119,9 @@ class BenchmarkExecutor:
         reps_planned = experiment.repetitions_planned or 5
         rep_latencies_p95: List[float] = []
         rep_tps_list: List[float] = []
+        last_bench_res = None
+        decrypted_pw = vault.decrypt(connection.encrypted_password)
+        query_templates = cfg.get("query_templates") or ["SELECT 1;"]
 
         try:
             for rep in range(reps_planned):
@@ -124,16 +131,22 @@ class BenchmarkExecutor:
                     await session.commit()
                     return
 
-                # Simulate repetition iteration or call pgbench
-                await asyncio.sleep(0.1)  # Simulated execution cycle
+                # Execute benchmark via PgBenchRunner (pgbench binary, native psycopg pool, or labeled fallback)
+                bench_res = await self._runner.execute(
+                    experiment_id=experiment.id,
+                    host=connection.host,
+                    port=connection.port,
+                    database=connection.database_name,
+                    username=connection.username,
+                    password=decrypted_pw,
+                    vus=vus,
+                    duration_s=duration_s,
+                    query_templates=query_templates,
+                )
+                last_bench_res = bench_res
 
-                # Realistic measurements based on concurrency and contention
-                contention_multiplier = 1.0 + (zipf_alpha * (vus / 20.0))
-                base_lat = 4.2 + (vus * 0.15) * contention_multiplier
-                jitter = random.uniform(-0.15, 0.15) * base_lat
-                rep_p95 = round(max(1.0, base_lat + jitter), 2)
-                rep_tps = round(max(10.0, (vus * 1000.0) / (rep_p95 * 2.5)), 1)
-
+                rep_p95 = bench_res.latency_p95_ms
+                rep_tps = bench_res.tps
                 rep_latencies_p95.append(rep_p95)
                 rep_tps_list.append(rep_tps)
                 experiment.repetitions_completed = rep + 1
@@ -143,12 +156,12 @@ class BenchmarkExecutor:
                     experiment_id=experiment.id,
                     repetition_index=rep + 1,
                     timestamp_offset_ms=(rep + 1) * 1000,
-                    latency_p50=round(rep_p95 * 0.55, 2),
+                    latency_p50=bench_res.latency_p50_ms,
                     latency_p90=round(rep_p95 * 0.90, 2),
                     latency_p95=rep_p95,
-                    latency_p99=round(rep_p95 * 1.35, 2),
+                    latency_p99=bench_res.latency_p99_ms,
                     tps=rep_tps,
-                    error_count=0,
+                    error_count=bench_res.error_count,
                     buffer_hit_ratio=0.985 if zipf_alpha > 1.0 else 0.942,
                     active_connections=vus,
                     statement_exec_ratio=0.005,
@@ -156,7 +169,6 @@ class BenchmarkExecutor:
                 )
                 session.add(sample)
                 await session.commit()
-
 
             # Compute statistical properties
             mean_p95 = statistics.mean(rep_latencies_p95)
@@ -189,6 +201,10 @@ class BenchmarkExecutor:
             else:
                 outcome = ExperimentOutcome.NO_MATERIAL_CHANGE.value
 
+            is_simulated = last_bench_res.is_simulated if last_bench_res else True
+            measurement_source = last_bench_res.measurement_source if last_bench_res else "UNKNOWN"
+            simulation_reason = last_bench_res.simulation_reason if last_bench_res else None
+
             experiment.status = ExperimentStatus.COMPLETED.value
             experiment.completed_at = datetime.now(timezone.utc)
             experiment.outcome_classification = outcome
@@ -203,9 +219,13 @@ class BenchmarkExecutor:
                 "confidence_interval_95": ci_95,
                 "coefficient_of_variation": cv,
                 "repetitions_p95": rep_latencies_p95,
+                "is_simulated": is_simulated,
+                "measurement_source": measurement_source,
+                "simulation_reason": simulation_reason,
             }
             await session.commit()
-            logger.info("Experiment %s completed successfully with outcome %s", experiment_id, outcome)
+            logger.info("Experiment %s completed (%s) with outcome %s", experiment_id, measurement_source, outcome)
+
 
         except asyncio.CancelledError:
             experiment.status = ExperimentStatus.CANCELLED.value

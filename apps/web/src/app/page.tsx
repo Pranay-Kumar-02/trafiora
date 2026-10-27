@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -20,6 +21,17 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
+  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/v1/health")
+      .then((res) => {
+        if (res.ok) setApiOnline(true);
+        else setApiOnline(false);
+      })
+      .catch(() => setApiOnline(false));
+  }, []);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Title & Operational Status */}
@@ -52,22 +64,41 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Operational Tier Safety Banner */}
-      <div className="p-4 rounded-xl glass-panel border border-amber-800/40 bg-amber-950/20 flex items-start gap-3.5">
-        <Shield className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-        <div className="flex-1 text-xs">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">
-              Safety Boundary Active: Tier 2 (Authorized Test Target)
-            </span>
-            <span className="px-2 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-700/50 text-[10px] font-mono">
-              pg-test.internal
-            </span>
+      {/* Operational Tier Safety & Simulation Mode Banner */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 rounded-xl glass-panel border border-amber-800/40 bg-amber-950/20 flex items-start gap-3.5">
+          <Shield className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">
+                Safety Boundary Active: Tier 2 (Authorized Test Target)
+              </span>
+              <span className="px-2 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-700/50 text-[10px] font-mono">
+                pg-test.internal
+              </span>
+            </div>
+            <p className="text-gray-300 leading-relaxed">
+              Target connection is authorized for benchmark workload execution. Cold-cache OS cache flushing is strictly disabled on shared hosts.
+              Production Tier 1 connections remain strictly isolated to read-only monitoring queries with 0% termination permissions.
+            </p>
           </div>
-          <p className="text-gray-300 leading-relaxed">
-            Target connection is authorized for benchmark workload execution. Cold-cache OS cache flushing is strictly disabled on shared hosts.
-            Production Tier 1 connections remain strictly isolated to read-only monitoring queries with 0% termination permissions.
-          </p>
+        </div>
+
+        <div className="p-4 rounded-xl glass-panel border border-indigo-800/40 bg-indigo-950/20 flex items-start gap-3.5">
+          <Database className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-bold text-cyan-300 uppercase tracking-wider text-[11px]">
+                Data Mode: Architectural Baseline Fixture
+              </span>
+              <span className="px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-200 border border-indigo-700/50 text-[10px] font-mono">
+                {apiOnline === true ? "FastAPI: Connected" : "FastAPI: Checking..."}
+              </span>
+            </div>
+            <p className="text-gray-300 leading-relaxed">
+              Target PostgreSQL host is offline. Telemetry below represents pre-calculated architectural baseline modeling, not live database hardware statistics. Run a live benchmark in Experiments to capture live metrics.
+            </p>
+          </div>
         </div>
       </div>
 

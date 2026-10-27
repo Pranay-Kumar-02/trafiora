@@ -91,12 +91,33 @@ async def list_connections(
 
 
 @router.post("/{connection_id}/probe")
-async def probe_connection(connection_id: str) -> dict[str, Any]:
+async def probe_connection(
+    connection_id: str,
+    session: AsyncSession = Depends(get_db_session),
+) -> dict[str, Any]:
     """Probes connection connectivity, engine version, and extensions."""
-    if connection_id not in _connections_store:
-        raise HTTPException(status_code=404, detail="Connection not found")
+    conn = _connections_store.get(connection_id)
+    if not conn:
+        result = await session.execute(select(ConnectionModel).where(ConnectionModel.id == connection_id))
+        db_conn = result.scalar_one_or_none()
+        if not db_conn:
+            raise HTTPException(status_code=404, detail="Connection not found")
+        conn = {
+            "id": db_conn.id,
+            "name": db_conn.name,
+            "engine": db_conn.engine,
+            "host": db_conn.host,
+            "port": db_conn.port,
+            "database_name": db_conn.database_name,
+            "username": db_conn.username,
+            "encrypted_password": db_conn.encrypted_password,
+            "ssl_mode": db_conn.ssl_mode,
+            "operational_tier": db_conn.operational_tier,
+            "is_disposable_sandbox": db_conn.is_disposable_sandbox,
+            "capabilities": db_conn.capabilities or {},
+        }
+        _connections_store[connection_id] = conn
         
-    conn = _connections_store[connection_id]
     decrypted_pw = vault.decrypt(conn["encrypted_password"])
     
     adapter = PostgresAdapter(

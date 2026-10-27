@@ -126,21 +126,31 @@ class PostgresAdapter(DatabaseAdapter):
 
     async def execute_read_only(self, query: str, timeout_seconds: float = 2.0) -> list[dict[str, Any]]:
         """Executes catalog inspection query with strict read-only guarantees."""
-        # Sanity check: prevent obvious DDL/DML
         normalized_q = query.strip().upper()
         if not normalized_q.startswith(("SELECT", "EXPLAIN", "SHOW")):
             raise PermissionError("Only SELECT, EXPLAIN, and SHOW statements are permitted in read-only observation mode.")
+
+        # STRICT SECURITY: Block execution-capable statements disguised as EXPLAIN
+        if normalized_q.startswith("EXPLAIN") and ("ANALYZE" in normalized_q or "EXECUTE" in normalized_q):
+            raise PermissionError("EXPLAIN ANALYZE executes queries and is strictly prohibited on read-only observation targets.")
+
+        # Block any mutation DDL/DML keywords
+        for forbidden in ["INSERT ", "UPDATE ", "DELETE ", "DROP ", "ALTER ", "TRUNCATE ", "CREATE ", "GRANT ", "REVOKE "]:
+            if forbidden in normalized_q:
+                raise PermissionError(f"Mutations containing '{forbidden.strip()}' are strictly prohibited in read-only observation mode.")
 
         async with await psycopg.AsyncConnection.connect(
             self._get_connection_string(), connect_timeout=3
         ) as aconn:
             async with aconn.cursor() as cur:
-                # Set statement timeout on connection
+                # Enforce engine-level read-only session & bounded statement timeout
+                await cur.execute("SET default_transaction_read_only = on;")
                 await cur.execute(f"SET statement_timeout = '{int(timeout_seconds * 1000)}ms';")
                 await cur.execute(query)
                 columns = [desc[0] for desc in cur.description] if cur.description else []
                 rows = await cur.fetchall()
                 return [dict(zip(columns, row, strict=False)) for row in rows]
+
 
     async def get_active_sessions(self) -> list[dict[str, Any]]:
         """Returns active sessions from pg_stat_activity."""
