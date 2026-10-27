@@ -1,0 +1,81 @@
+# Dependencies & Package Managers
+node_modules/
+.pnpm-store/
+.npm/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Next.js & Frontend Builds
+apps/web/.next/
+apps/web/out/
+apps/web/build/
+.next/
+out/
+next-env.d.ts
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+.coverage.*
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Linters & Tooling Cache
+.ruff_cache/
+.mypy_cache/
+.eslintcache/
+*.tsbuildinfo
+
+# Environment & Sensitive Files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.cert
+*.crt
+secrets/
+
+# IDE & OS Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.bak
+
+# Benchmark Artifacts & Ephemeral DB
+pgdata/
+*.log
+scratch/
+tmp/
