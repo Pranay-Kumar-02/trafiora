@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trafiora-ci"
+version = "0.1.0"
+description = "Trafiora Database Workload Regression Prevention CLI"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic>=2.10.6",
+]
+
+[project.scripts]
+trafiora-ci = "trafiora_ci.main:cli_main"
