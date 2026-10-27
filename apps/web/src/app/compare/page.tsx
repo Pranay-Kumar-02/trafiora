@@ -1,191 +1,316 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Activity,
   AlertTriangle,
   ArrowRight,
-  BarChart2,
   CheckCircle2,
   Download,
   FileText,
   GitCompare,
+  HardDrive,
+  Info,
+  Layers,
+  Play,
+  RotateCw,
   TrendingDown,
   TrendingUp,
   XCircle,
   Zap,
 } from "lucide-react";
+import { Badge } from "../../components/ui/Badge";
+
+interface ComparisonRow {
+  metric: string;
+  baseline: string;
+  candidate: string;
+  delta: string;
+  isPositiveGood: boolean;
+  significance: string;
+}
+
+const COMPARISON_ROWS: ComparisonRow[] = [
+  {
+    metric: "Latency (p95)",
+    baseline: "10.05 ms",
+    candidate: "7.20 ms",
+    delta: "-28.4%",
+    isPositiveGood: false,
+    significance: "Significant (p < 0.001, Welch t-test)",
+  },
+  {
+    metric: "Latency (p50 / Median)",
+    baseline: "5.40 ms",
+    candidate: "3.95 ms",
+    delta: "-26.8%",
+    isPositiveGood: false,
+    significance: "Significant (p < 0.001)",
+  },
+  {
+    metric: "Latency (p99 Tail)",
+    baseline: "28.50 ms",
+    candidate: "18.20 ms",
+    delta: "-36.1%",
+    isPositiveGood: false,
+    significance: "Significant (Tail variance reduced)",
+  },
+  {
+    metric: "Throughput (TPS)",
+    baseline: "1,240 TPS",
+    candidate: "1,620 TPS",
+    delta: "+30.6%",
+    isPositiveGood: true,
+    significance: "Throughput Capacity Win",
+  },
+  {
+    metric: "Buffer Cache Hit Ratio",
+    baseline: "94.2%",
+    candidate: "99.2%",
+    delta: "+5.0%",
+    isPositiveGood: true,
+    significance: "Cache Thrashing Eliminated",
+  },
+  {
+    metric: "Host CPU per 1k TPS",
+    baseline: "14.2% CPU",
+    candidate: "9.8% CPU",
+    delta: "-31.0%",
+    isPositiveGood: false,
+    significance: "Efficiency Gain",
+  },
+];
 
 export default function ComparePage() {
   const [outcome, setOutcome] = useState<string>("MEASURED_IMPROVEMENT");
 
+  const handleExportMarkdown = () => {
+    const report = `# Trafiora Benchmark Comparison Report
+Generated: ${new Date().toISOString()}
+Target: Tier 2 Authorized Benchmark Target (PostgreSQL 18.6)
+Scenario: Hot-Record Read Spikes (Zipfian Skew, K=5 repetitions)
+
+## Statistical Verdict: MEASURED_IMPROVEMENT
+- Latency (p95): 10.05 ms -> 7.20 ms (-28.4%)
+- Throughput: 1,240 TPS -> 1,620 TPS (+30.6%)
+- Buffer Cache Hit Ratio: 94.2% -> 99.2% (+5.0%)
+- 95% Confidence Interval: [6.85ms, 7.55ms]
+- Coefficient of Variation (CV): 0.024 (< 0.05 threshold)
+
+## Statistical Assessment
+Candidate composite index on (user_id, created_at DESC) successfully reduced sequential block reads, resulting in a statistically significant improvement across all monitored percentiles.
+`;
+    const blob = new Blob([report], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `trafiora-comparison-report.md`;
+    a.click();
+  };
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Title & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <GitCompare className="w-6 h-6 text-indigo-400" />
-            Baseline vs Candidate A/B Performance Comparison
+          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
+            <GitCompare className="w-5 h-5 text-brand-teal" />
+            <span>BASELINE VS CANDIDATE A/B PERFORMANCE COMPARISON</span>
           </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Statistically rigorous comparison evaluating latency distributions, throughput retention, and buffer hit deltas across repetitions.
+          <p className="text-xs text-graphite-200 mt-0.5">
+            Statistical regression evaluation comparing latency percentiles, throughput retention, and buffer efficiency.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Badge variant="tier2">Tier 2 Authorized</Badge>
           <button
-            onClick={() => {
-              const report = `# Trafiora Benchmark Comparison Report\nOutcome: MEASURED_IMPROVEMENT\np95 Delta: -28.4%\nConfidence Interval: [6.8ms, 7.6ms]\nStatus: VERIFIED`;
-              const blob = new Blob([report], { type: "text/markdown" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = "trafiora-benchmark-comparison.md";
-              a.click();
-            }}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-700 text-xs font-medium text-gray-200 transition-all"
+            onClick={handleExportMarkdown}
+            className="flex items-center gap-1.5 px-3 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-500 text-xs font-mono text-graphite-100 transition-colors"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export Markdown Report</span>
+            <Download className="w-3.5 h-3.5 text-brand-teal" />
+            <span>Export Report (.md)</span>
           </button>
         </div>
       </div>
 
       {/* Outcome Verdict Banner */}
-      <div className="p-5 rounded-2xl glass-panel border border-emerald-800/50 bg-emerald-950/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div className="p-2.5 rounded-xl bg-emerald-900/60 border border-emerald-700/50 text-emerald-300">
-            <CheckCircle2 className="w-6 h-6" />
+      <div className="panel p-4 border-status-successBorder bg-status-successSurface/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded bg-status-successSurface border border-status-successBorder text-status-success shrink-0 mt-0.5">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
-          <div>
+          <div className="space-y-0.5 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-emerald-300 uppercase tracking-wider font-mono">
-                Statistical Verdict: MEASURED_IMPROVEMENT
+              <span className="font-bold text-status-success font-mono uppercase text-xs">
+                Statistical Outcome: MEASURED_IMPROVEMENT
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-900 text-emerald-200 border border-emerald-700 font-mono">
-                95% Bootstrap CI
+              <span className="px-1.5 py-0.2 rounded bg-graphite-800 text-graphite-200 border border-graphite-600 font-mono text-[10px]">
+                K = 5 Repetitions &bull; CV = 0.024
               </span>
             </div>
-            <p className="text-xs text-gray-300 mt-1 leading-relaxed">
-              Candidate optimization achieved a <strong className="text-emerald-400">28.4% reduction in p95 latency</strong> with non-overlapping confidence intervals across 5 measured repetitions (CV=0.024 &lt; 0.05).
+            <p className="text-graphite-200 leading-relaxed text-[11px]">
+              Candidate optimization achieved a <strong className="text-status-success font-semibold">28.4% reduction in p95 latency</strong> with non-overlapping 95% bootstrap confidence intervals [6.85ms, 7.55ms] across 5 isolated repetitions.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs text-gray-400 font-mono">Statistical Power:</span>
-          <span className="px-2.5 py-1 rounded bg-black/60 border border-emerald-800 text-emerald-300 font-mono text-xs font-bold">
-            HIGH (K = 5)
+        <div className="flex items-center gap-2 shrink-0 text-xs font-mono">
+          <span className="text-graphite-300 text-[11px]">Power Assessment:</span>
+          <span className="px-2 py-0.5 rounded bg-graphite-900 border border-status-successBorder text-status-success font-bold text-[11px]">
+            HIGH CONFIDENCE (p &lt; 0.001)
           </span>
         </div>
       </div>
 
-      {/* Side-by-Side Metric Table */}
-      <div className="glass-panel p-5 rounded-2xl space-y-4">
-        <h2 className="text-base font-semibold text-white">Comparative Performance Diffs</h2>
+      {/* Side-by-Side Comparison Metric Table */}
+      <div className="panel p-4 space-y-3">
+        <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+          <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+            Comparative Performance Metrics Matrix
+          </h3>
+          <span className="text-[10px] font-mono text-graphite-300">
+            Baseline (Pre-Opt) vs Candidate (With Index)
+          </span>
+        </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-gray-800 text-gray-400 uppercase tracking-wider text-[10px]">
-              <tr>
-                <th className="py-3 px-4">Metric Measurement</th>
-                <th className="py-3 px-4">Baseline (Pre-Opt)</th>
-                <th className="py-3 px-4">Candidate (With Index)</th>
-                <th className="py-3 px-4">Measured Delta</th>
-                <th className="py-3 px-4">Statistical Significance</th>
+          <table className="w-full text-left text-xs font-mono">
+            <thead>
+              <tr className="border-b border-graphite-600 text-[10px] text-graphite-300 uppercase">
+                <th className="py-2.5 px-3">Performance Dimension</th>
+                <th className="py-2.5 px-3 text-right">Baseline (Pre-Opt)</th>
+                <th className="py-2.5 px-3 text-right">Candidate (Optimized)</th>
+                <th className="py-2.5 px-3 text-right">Relative Delta</th>
+                <th className="py-2.5 px-3">Statistical Significance</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800/60 font-mono text-xs">
-              <tr className="hover:bg-gray-900/40">
-                <td className="py-3.5 px-4 font-sans font-semibold text-white">Latency (p95)</td>
-                <td className="py-3.5 px-4 text-gray-300">10.05 ms</td>
-                <td className="py-3.5 px-4 text-emerald-400 font-bold">7.20 ms</td>
-                <td className="py-3.5 px-4">
-                  <span className="px-2 py-0.5 rounded text-[11px] bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-bold">
-                    -28.4%
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-emerald-400 font-sans">Statistically Significant (p &lt; 0.01)</td>
-              </tr>
-
-              <tr className="hover:bg-gray-900/40">
-                <td className="py-3.5 px-4 font-sans font-semibold text-white">Latency (p50 / Median)</td>
-                <td className="py-3.5 px-4 text-gray-300">5.40 ms</td>
-                <td className="py-3.5 px-4 text-emerald-400">3.95 ms</td>
-                <td className="py-3.5 px-4">
-                  <span className="px-2 py-0.5 rounded text-[11px] bg-emerald-950 text-emerald-300 border border-emerald-800/60">
-                    -26.8%
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-emerald-400 font-sans">Statistically Significant</td>
-              </tr>
-
-              <tr className="hover:bg-gray-900/40">
-                <td className="py-3.5 px-4 font-sans font-semibold text-white">Throughput (TPS)</td>
-                <td className="py-3.5 px-4 text-gray-300">1,240 TPS</td>
-                <td className="py-3.5 px-4 text-emerald-400 font-bold">1,620 TPS</td>
-                <td className="py-3.5 px-4">
-                  <span className="px-2 py-0.5 rounded text-[11px] bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-bold">
-                    +30.6%
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-emerald-400 font-sans">Throughput Win</td>
-              </tr>
-
-              <tr className="hover:bg-gray-900/40">
-                <td className="py-3.5 px-4 font-sans font-semibold text-white">Buffer Cache Hit Ratio</td>
-                <td className="py-3.5 px-4 text-amber-400">94.2 %</td>
-                <td className="py-3.5 px-4 text-emerald-400 font-bold">99.2 %</td>
-                <td className="py-3.5 px-4">
-                  <span className="px-2 py-0.5 rounded text-[11px] bg-emerald-950 text-emerald-300 border border-emerald-800/60">
-                    +5.0%
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-gray-400 font-sans">Eliminated Disk Reads</td>
-              </tr>
-
-              <tr className="hover:bg-gray-900/40">
-                <td className="py-3.5 px-4 font-sans font-semibold text-white">Variance (CV)</td>
-                <td className="py-3.5 px-4 text-gray-400">0.031</td>
-                <td className="py-3.5 px-4 text-emerald-400">0.024</td>
-                <td className="py-3.5 px-4 text-gray-400">-0.007</td>
-                <td className="py-3.5 px-4 text-emerald-400 font-sans">Stable (CV &lt; 0.05)</td>
-              </tr>
+            <tbody className="divide-y divide-graphite-600/60">
+              {COMPARISON_ROWS.map((row, idx) => (
+                <tr key={idx} className="hover:bg-graphite-850/60 transition-colors">
+                  <td className="py-2.5 px-3 font-semibold text-graphite-100 font-sans">
+                    {row.metric}
+                  </td>
+                  <td className="py-2.5 px-3 text-right text-graphite-300 tabular-nums">
+                    {row.baseline}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-bold text-brand-teal tabular-nums">
+                    {row.candidate}
+                  </td>
+                  <td className="py-2.5 px-3 text-right">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-bold tabular-nums border ${
+                        (!row.isPositiveGood && row.delta.startsWith("-")) ||
+                        (row.isPositiveGood && row.delta.startsWith("+"))
+                          ? "bg-status-successSurface text-status-success border-status-successBorder"
+                          : "bg-status-errorSurface text-status-error border-status-errorBorder"
+                      }`}
+                    >
+                      {row.delta}
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-3 text-graphite-200 text-[11px] font-sans">
+                    {row.significance}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Rationale & Evidence Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel p-5 rounded-2xl space-y-3">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-400" />
-            Optimization Evidence Summary
-          </h3>
-          <p className="text-xs text-gray-300 leading-relaxed">
-            The candidate run applied index <code className="text-indigo-300 font-mono">idx_tx_account_created</code> to table <code className="text-indigo-300 font-mono">transactions</code>.
-            This converted the execution plan from a sequential scan (120,000 rows scanned) to an index scan, lowering memory pressure and cutting statement execution time by 28.4%.
-          </p>
+      {/* Bottom Grid: Latency Distribution CDF Curve & Repetition Evidence */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Latency CDF Curve Visualization */}
+        <div className="panel p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+            <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+              Cumulative Distribution Function (Latency CDF)
+            </h3>
+            <span className="text-[10px] font-mono text-graphite-300">N = 2,500 samples</span>
+          </div>
+
+          <div className="space-y-2">
+            {/* SVG CDF Chart */}
+            <div className="w-full h-44 bg-graphite-950 rounded border border-graphite-600 p-2 flex items-center justify-center">
+              <svg viewBox="0 0 360 140" className="w-full h-full select-none">
+                {/* Axes */}
+                <line x1="30" y1="120" x2="340" y2="120" stroke="#222A35" strokeWidth="1" />
+                <line x1="30" y1="10" x2="30" y2="120" stroke="#222A35" strokeWidth="1" />
+
+                {/* Y-axis ticks (CDF 0 to 1.0) */}
+                <text x="24" y="123" textAnchor="end" className="text-[8px] fill-[#596573] font-mono">0.0</text>
+                <text x="24" y="68" textAnchor="end" className="text-[8px] fill-[#596573] font-mono">0.5</text>
+                <text x="24" y="15" textAnchor="end" className="text-[8px] fill-[#596573] font-mono">1.0</text>
+
+                {/* Baseline CDF curve (grey dashed) */}
+                <path
+                  d="M 30 120 C 70 120, 100 80, 160 50 C 220 25, 280 15, 340 10"
+                  fill="none"
+                  stroke="#9AA5B1"
+                  strokeWidth="2"
+                  strokeDasharray="3 3"
+                />
+
+                {/* Candidate CDF curve (brand-teal solid, shifted left = lower latency) */}
+                <path
+                  d="M 30 120 C 60 120, 80 50, 120 25 C 180 12, 240 10, 340 10"
+                  fill="none"
+                  stroke="#66D9C0"
+                  strokeWidth="2.5"
+                />
+
+                {/* Legend in chart */}
+                <g transform="translate(180, 80)">
+                  <line x1="0" y1="5" x2="15" y2="5" stroke="#9AA5B1" strokeWidth="2" strokeDasharray="3 3" />
+                  <text x="20" y="8" className="text-[8px] fill-[#9AA5B1] font-mono">Baseline CDF</text>
+                  <line x1="0" y1="18" x2="15" y2="18" stroke="#66D9C0" strokeWidth="2.5" />
+                  <text x="20" y="21" className="text-[8px] fill-[#66D9C0] font-mono">Candidate CDF (Shift Left = Faster)</text>
+                </g>
+              </svg>
+            </div>
+
+            <div className="flex justify-between px-6 text-[10px] font-mono text-graphite-300">
+              <span>0 ms</span>
+              <span>10 ms</span>
+              <span>20 ms</span>
+              <span>30 ms</span>
+            </div>
+          </div>
         </div>
 
-        <div className="glass-panel p-5 rounded-2xl space-y-3">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-            <Activity className="w-4 h-4 text-cyan-400" />
-            95% Confidence Interval Span
-          </h3>
-          <div className="p-3 rounded-lg bg-gray-900/80 border border-gray-800 text-xs font-mono space-y-2">
-            <div className="flex justify-between text-gray-400">
-              <span>Baseline 95% CI:</span>
-              <span className="text-gray-200">[9.82 ms, 10.28 ms]</span>
+        {/* Repetition Variability & Confidence Evidence */}
+        <div className="panel p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+            <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+              Repetition Variability &amp; Confidence Interval
+            </h3>
+            <span className="text-[10px] font-mono text-graphite-300">K = 5 Runs</span>
+          </div>
+
+          <div className="space-y-2 text-xs font-mono">
+            <div className="p-2.5 rounded bg-graphite-850 border border-graphite-600 space-y-1">
+              <span className="text-[10px] text-graphite-300 block uppercase">Candidate 95% Confidence Interval</span>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-brand-teal tabular-nums">[6.85 ms, 7.55 ms]</span>
+                <span className="text-[11px] text-status-success font-sans">Zero Overlap with Baseline [9.80ms, 10.30ms]</span>
+              </div>
             </div>
-            <div className="flex justify-between text-gray-400">
-              <span>Candidate 95% CI:</span>
-              <span className="text-emerald-400 font-bold">[7.02 ms, 7.38 ms]</span>
+
+            <div className="p-2.5 rounded bg-graphite-850 border border-graphite-600 space-y-1">
+              <span className="text-[10px] text-graphite-300 block uppercase">Coefficient of Variation (CV)</span>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-graphite-50 tabular-nums">0.024 (2.4%)</span>
+                <span className="text-[11px] text-status-success font-sans">Below 5% threshold (Test Valid)</span>
+              </div>
             </div>
-            <div className="text-[11px] text-emerald-400 font-sans pt-1">
-              Zero overlap between intervals confirms legitimate optimization gain.
+
+            <div className="p-2.5 rounded bg-graphite-950 border border-graphite-600 space-y-1 text-[11px]">
+              <span className="font-semibold text-graphite-50 block font-mono">Automated CI Policy Rule:</span>
+              <p className="text-graphite-200 font-sans leading-relaxed">
+                If candidate p95 latency improves by &gt; 5% with p &lt; 0.05 and CV &lt; 0.05, PR status checks pass automatically.
+              </p>
             </div>
           </div>
         </div>

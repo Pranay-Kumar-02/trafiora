@@ -1,45 +1,100 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, Database, Shield, Zap } from "lucide-react";
+import Link from "next/link";
+import {
+  Activity,
+  CheckCircle2,
+  Clock,
+  Database,
+  Play,
+  RotateCw,
+  Search,
+  Shield,
+  Zap,
+} from "lucide-react";
+import { Badge } from "../ui/Badge";
 
 export function Header() {
-  const [apiOnline, setApiOnline] = useState<boolean>(true);
-  const [tier, setTier] = useState<string>("tier_2_workload_benchmark");
+  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const [freshness, setFreshness] = useState<string>("just now");
+  const [activeTier, setActiveTier] = useState<"tier_1_read_only" | "tier_2_workload_benchmark">("tier_2_workload_benchmark");
+
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/v1/health");
+        if (res.ok) {
+          setApiOnline(true);
+          const now = new Date();
+          setFreshness(now.toLocaleTimeString());
+        } else {
+          setApiOnline(false);
+        }
+      } catch {
+        setApiOnline(false);
+      }
+    };
+
+    checkHealth();
+    const interval = setInterval(checkHealth, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <header className="h-16 border-b border-gray-800 bg-gray-950/60 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
-      {/* Current Connection & Tier Selector */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-sm">
-          <Database className="w-4 h-4 text-cyan-400" />
-          <span className="font-medium text-gray-200">PostgreSQL Target</span>
-          <span className="text-gray-500">|</span>
-          <span className="font-mono text-xs text-gray-400">pg-test.internal:5432/app_db</span>
+    <header className="h-12 border-b border-graphite-600 bg-graphite-900 px-4 flex items-center justify-between sticky top-0 z-30 select-none">
+      {/* Active Database Context & Operational Tier */}
+      <div className="flex items-center gap-2.5 text-xs font-mono">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-graphite-800 border border-graphite-600 text-graphite-100">
+          <Database className="w-3.5 h-3.5 text-brand-teal" />
+          <span className="font-semibold text-graphite-50">pg-test.internal</span>
+          <span className="text-graphite-400">:5432/app_db</span>
         </div>
 
-        {/* Operational Tier Badge */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-amber-950/40 text-amber-300 border-amber-800/50">
-          <Shield className="w-3.5 h-3.5 text-amber-400" />
-          <span>Tier 2: Authorized Test Target</span>
+        {/* Operational Safety Tier */}
+        {activeTier === "tier_2_workload_benchmark" ? (
+          <Badge variant="tier2">
+            Tier 2: Authorized Benchmark Target
+          </Badge>
+        ) : (
+          <Badge variant="tier1">
+            Tier 1: Read-Only Observation Only
+          </Badge>
+        )}
+
+        {/* Telemetry Freshness */}
+        <div className="hidden md:flex items-center gap-1 text-[11px] text-graphite-300">
+          <Clock className="w-3 h-3 text-graphite-400" />
+          <span>Refreshed: {freshness}</span>
         </div>
       </div>
 
-      {/* Status & Quick Actions */}
-      <div className="flex items-center gap-4">
-        {/* API Health indicator */}
-        <div className="flex items-center gap-2 text-xs font-mono">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+      {/* Control Plane Status & Global Action */}
+      <div className="flex items-center gap-3">
+        {/* API Health */}
+        <div className="flex items-center gap-1.5 text-xs font-mono">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              apiOnline === true
+                ? "bg-status-success animate-pulse"
+                : apiOnline === false
+                ? "bg-status-error"
+                : "bg-graphite-400"
+            }`}
+          />
+          <span className="text-graphite-200 hidden sm:inline text-[11px]">
+            {apiOnline === true ? "Control Plane: Active" : "Control Plane: Offline"}
           </span>
-          <span className="text-gray-400">Control Plane: Online</span>
         </div>
 
-        <button className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all">
-          <Zap className="w-3.5 h-3.5" />
-          <span>New Experiment</span>
-        </button>
+        {/* Contextual Action */}
+        <Link
+          href="/experiments"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand-teal text-graphite-950 font-semibold text-xs hover:bg-brand-tealLight transition-colors shadow-subtle"
+        >
+          <Play className="w-3 h-3 fill-current" />
+          <span>Run Experiment</span>
+        </Link>
       </div>
     </header>
   );

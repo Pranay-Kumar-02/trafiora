@@ -1,17 +1,37 @@
 "use client";
 
+import Link from "next/link";
 import {
   AlertCircle,
+  AlertTriangle,
+  ArrowRight,
   CheckCircle2,
+  ExternalLink,
   GitBranch,
   GitCommit,
+  Shield,
   Terminal,
   TrendingDown,
   TrendingUp,
   XCircle,
+  Zap,
 } from "lucide-react";
+import { Badge } from "../../components/ui/Badge";
 
-const CI_RUNS = [
+interface CIRun {
+  id: string;
+  pr_number: string;
+  branch: string;
+  commit_sha: string;
+  baseline_p95: number;
+  candidate_p95: number;
+  diff_pct: number;
+  status: "PASSED" | "FAILED" | "INCONCLUSIVE";
+  outcome: string;
+  timestamp: string;
+}
+
+const CI_RUNS: CIRun[] = [
   {
     id: "ci-run-842",
     pr_number: "#142",
@@ -48,88 +68,158 @@ const CI_RUNS = [
     outcome: "NO_MATERIAL_CHANGE",
     timestamp: "5 hours ago",
   },
+  {
+    id: "ci-run-839",
+    pr_number: "#135",
+    branch: "test/noisy-background-vacuum",
+    commit_sha: "5f8a12e",
+    baseline_p95: 12.0,
+    candidate_p95: 12.8,
+    diff_pct: +6.6,
+    status: "INCONCLUSIVE",
+    outcome: "HIGH_VARIANCE_INCONCLUSIVE",
+    timestamp: "1 day ago",
+  },
 ];
 
 export default function CIPage() {
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Title */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-          <Terminal className="w-6 h-6 text-indigo-400" />
-          CI/CD Performance Regression Prevention Gates
-        </h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Automated database workload evaluation for GitHub Actions and GitLab CI, preventing slow queries before merge.
-        </p>
-      </div>
-
-      {/* CLI Installation Box */}
-      <div className="glass-panel p-5 rounded-2xl space-y-3">
-        <h2 className="text-sm font-semibold text-white">CLI Installation & GitHub Actions Step</h2>
-        <div className="p-3 rounded-lg bg-gray-950 border border-gray-800 font-mono text-xs text-indigo-300">
-          pip install trafiora-ci
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+        <div>
+          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
+            <Terminal className="w-5 h-5 text-brand-teal" />
+            <span>CI/CD PERFORMANCE REGRESSION AUDIT TRAIL</span>
+          </h1>
+          <p className="text-xs text-graphite-200 mt-0.5">
+            Automated regression quality gate preventing pull requests with query performance regressions from reaching production.
+          </p>
         </div>
-        <div className="p-3 rounded-lg bg-gray-950 border border-gray-800 font-mono text-xs text-gray-300 overflow-x-auto">
-          trafiora-ci eval --baseline baseline.json --candidate candidate.json --max-latency-pct 5.0
+
+        <div className="flex items-center gap-2">
+          <Badge variant="healthy">GitHub Actions Gate Active</Badge>
+          <Badge variant="tier2">CLI: trafiora eval-ci</Badge>
         </div>
       </div>
 
-      {/* Recent CI Runs */}
-      <div className="glass-panel p-5 rounded-2xl space-y-4">
-        <h2 className="text-base font-semibold text-white">Recent Pull Request Pipeline Evaluations</h2>
+      {/* Quality Gate Threshold Rules */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
+        <div className="panel p-3.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-status-success">
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="font-bold text-[11px] uppercase">Pass Criteria</span>
+          </div>
+          <p className="text-graphite-200 text-[11px] font-sans leading-relaxed">
+            Candidate p95 latency does not regress beyond <strong>5.0% threshold</strong> and p-value &lt; 0.05.
+          </p>
+        </div>
+
+        <div className="panel p-3.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-status-error">
+            <XCircle className="w-4 h-4" />
+            <span className="font-bold text-[11px] uppercase">Fail Criteria</span>
+          </div>
+          <p className="text-graphite-200 text-[11px] font-sans leading-relaxed">
+            Candidate p95 latency regresses by &gt; 5.0% with statistical confidence, blocking PR merge.
+          </p>
+        </div>
+
+        <div className="panel p-3.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-status-warning">
+            <AlertTriangle className="w-4 h-4" />
+            <span className="font-bold text-[11px] uppercase">Inconclusive Handling</span>
+          </div>
+          <p className="text-graphite-200 text-[11px] font-sans leading-relaxed">
+            Coefficient of variation &gt; 5% triggers inconclusive warning; tests must be re-run in isolated sandbox.
+          </p>
+        </div>
+      </div>
+
+      {/* CI Runs Table */}
+      <div className="panel p-4 space-y-3">
+        <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+          <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+            Pull Request Evaluation History
+          </h2>
+          <span className="text-[10px] font-mono text-graphite-300">
+            Automated CLI Evaluation Logs
+          </span>
+        </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-gray-800 text-gray-400 uppercase tracking-wider text-[10px]">
-              <tr>
-                <th className="py-2.5 px-3">Run & PR</th>
-                <th className="py-2.5 px-3">Branch & Commit</th>
-                <th className="py-2.5 px-3">Baseline p95</th>
-                <th className="py-2.5 px-3">Candidate p95</th>
-                <th className="py-2.5 px-3">Delta</th>
-                <th className="py-2.5 px-3">Outcome</th>
-                <th className="py-2.5 px-3">Status</th>
+          <table className="w-full text-left text-xs font-mono">
+            <thead>
+              <tr className="border-b border-graphite-600 text-[10px] text-graphite-300 uppercase">
+                <th className="py-2.5 px-3">Pull Request &amp; Commit</th>
+                <th className="py-2.5 px-3">Gate Status</th>
+                <th className="py-2.5 px-3 text-right">Baseline p95</th>
+                <th className="py-2.5 px-3 text-right">Candidate p95</th>
+                <th className="py-2.5 px-3 text-right">Relative Delta</th>
+                <th className="py-2.5 px-3">Verdict Classification</th>
+                <th className="py-2.5 px-3">Timestamp</th>
+                <th className="py-2.5 px-3 text-right">Evidence</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800/60 font-mono">
+            <tbody className="divide-y divide-graphite-600/60">
               {CI_RUNS.map((run) => (
-                <tr key={run.id} className="hover:bg-gray-900/40">
+                <tr key={run.id} className="hover:bg-graphite-850/60 transition-colors">
                   <td className="py-3 px-3">
-                    <span className="font-bold text-white font-sans mr-2">{run.pr_number}</span>
-                    <span className="text-gray-500 text-[11px]">{run.id}</span>
-                  </td>
-                  <td className="py-3 px-3">
-                    <div className="text-indigo-400 font-sans text-xs flex items-center gap-1">
-                      <GitBranch className="w-3 h-3" />
-                      <span>{run.branch}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-graphite-50">{run.pr_number}</span>
+                      <span className="text-graphite-200 font-sans">{run.branch}</span>
                     </div>
-                    <div className="text-gray-500 text-[10px]">{run.commit_sha} &bull; {run.timestamp}</div>
+                    <div className="text-[10px] text-graphite-400 flex items-center gap-1 mt-0.5">
+                      <GitCommit className="w-3 h-3" />
+                      <span>{run.commit_sha}</span>
+                    </div>
                   </td>
-                  <td className="py-3 px-3 text-gray-300">{run.baseline_p95} ms</td>
-                  <td className="py-3 px-3 text-white font-bold">{run.candidate_p95} ms</td>
                   <td className="py-3 px-3">
+                    <Badge
+                      variant={
+                        run.status === "PASSED"
+                          ? "healthy"
+                          : run.status === "FAILED"
+                          ? "critical"
+                          : "warning"
+                      }
+                    >
+                      {run.status}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-3 text-right text-graphite-300 tabular-nums">
+                    {run.baseline_p95.toFixed(1)} ms
+                  </td>
+                  <td className="py-3 px-3 text-right font-bold text-brand-teal tabular-nums">
+                    {run.candidate_p95.toFixed(1)} ms
+                  </td>
+                  <td className="py-3 px-3 text-right">
                     <span
-                      className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-bold tabular-nums border ${
                         run.diff_pct < 0
-                          ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                          : "bg-rose-950 text-rose-300 border border-rose-800"
+                          ? "bg-status-successSurface text-status-success border-status-successBorder"
+                          : run.diff_pct > 5
+                          ? "bg-status-errorSurface text-status-error border-status-errorBorder"
+                          : "bg-graphite-800 text-graphite-300 border-graphite-600"
                       }`}
                     >
                       {run.diff_pct > 0 ? `+${run.diff_pct}%` : `${run.diff_pct}%`}
                     </span>
                   </td>
-                  <td className="py-3 px-3 font-sans text-[11px] text-gray-300">{run.outcome}</td>
-                  <td className="py-3 px-3">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-sans font-semibold ${
-                        run.status === "PASSED"
-                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                          : "bg-rose-950 text-rose-400 border border-rose-800"
-                      }`}
+                  <td className="py-3 px-3 text-[11px] text-graphite-200">
+                    {run.outcome}
+                  </td>
+                  <td className="py-3 px-3 text-[11px] text-graphite-300">
+                    {run.timestamp}
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    <Link
+                      href="/compare"
+                      className="text-brand-teal hover:underline text-[11px] flex items-center justify-end gap-1"
                     >
-                      {run.status}
-                    </span>
+                      <span>Inspect</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
                   </td>
                 </tr>
               ))}

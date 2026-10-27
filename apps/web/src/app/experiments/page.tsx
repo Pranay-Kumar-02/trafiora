@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Activity,
   AlertCircle,
@@ -13,6 +14,7 @@ import {
   StopCircle,
   Zap,
 } from "lucide-react";
+import { Badge } from "../../components/ui/Badge";
 
 interface ScenarioTemplate {
   scenario_type: string;
@@ -59,310 +61,338 @@ export default function ExperimentsPage() {
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const fetchData = async () => {
+  const loadData = async () => {
     try {
-      // 1. Templates
-      const tRes = await fetch("/api/v1/scenarios/templates");
-      if (tRes.ok) setTemplates(await tRes.json());
+      const [tplRes, connRes, expRes] = await Promise.all([
+        fetch("http://127.0.0.1:8000/api/v1/scenarios/templates").catch(() => null),
+        fetch("http://127.0.0.1:8000/api/v1/connections").catch(() => null),
+        fetch("http://127.0.0.1:8000/api/v1/experiments").catch(() => null),
+      ]);
 
-      // 2. Connections
-      const cRes = await fetch("/api/v1/connections");
-      if (cRes.ok) {
-        const conns: ConnectionOption[] = await cRes.json();
-        setConnections(conns);
-        if (conns.length > 0 && !selectedConnection) {
-          // Default to first Tier 2 or 3 connection
-          const candidate = conns.find((c) => c.operational_tier !== "tier_1_read_only") || conns[0];
-          setSelectedConnection(candidate.id);
+      if (tplRes && tplRes.ok) {
+        const tplData = await tplRes.json();
+        setTemplates(tplData);
+      }
+      if (connRes && connRes.ok) {
+        const connData = await connRes.json();
+        setConnections(connData);
+        if (connData.length > 0 && !selectedConnection) {
+          const authorized = connData.find((c: any) => c.operational_tier === "tier_2_workload_benchmark");
+          setSelectedConnection(authorized ? authorized.id : connData[0].id);
         }
       }
-
-      // 3. Experiments
-      const eRes = await fetch("/api/v1/experiments");
-      if (eRes.ok) setExperiments(await eRes.json());
+      if (expRes && expRes.ok) {
+        const expData = await expRes.json();
+        setExperiments(expData);
+      }
     } catch {
-      // Demo fallback when API is starting
+      // Keep existing data
     }
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 4000);
+    loadData();
+    const interval = setInterval(loadData, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedConnection]);
 
-  const handleDispatch = async () => {
+  const handleLaunch = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsDispatching(true);
     setErrorMessage("");
-    setStatusMessage("Creating scenario and dispatching benchmark experiment...");
+    setStatusMessage("Validating scenario and database safety authorization...");
 
     try {
-      // 1. Create scenario first
-      const scenRes = await fetch("/api/v1/scenarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `${name} Scenario`,
+      const payload = {
+        name,
+        target_connection_id: selectedConnection,
+        is_baseline: isBaseline,
+        repetitions: Number(repetitions),
+        scenario: {
           scenario_type: selectedScenario,
-          config: {
+          parameters: {
             vus: Number(vus),
             duration_seconds: Number(duration),
-            warmup_seconds: 2,
-            zipf_alpha: 1.5,
-            read_write_ratio: 0.9,
-            query_templates: ["SELECT * FROM posts WHERE id = $1;"],
+            zipf_alpha: 1.2,
           },
-        }),
-      });
+        },
+      };
 
-      if (!scenRes.ok) {
-        const err = await scenRes.json();
-        throw new Error(err.detail || "Failed to create workload scenario");
-      }
-      const scenData = await scenRes.json();
-
-      // 2. Dispatch experiment
-      const connId = selectedConnection || (connections[0]?.id ?? "mock-conn-id");
-      const expRes = await fetch("/api/v1/experiments", {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/experiments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          connection_id: connId,
-          scenario_id: scenData.id,
-          is_baseline: isBaseline,
-          repetitions_planned: Number(repetitions),
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!expRes.ok) {
-        const err = await expRes.json();
-        throw new Error(err.detail || "Experiment dispatch failed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Launch rejected" }));
+        throw new Error(err.detail || "Experiment execution failed");
       }
 
-      const createdExp = await expRes.json();
-      setStatusMessage(`Experiment '${createdExp.name}' queued! Live execution started.`);
-      fetchData();
+      setStatusMessage("Experiment dispatched. Benchmark worker active.");
+      await loadData();
     } catch (err: any) {
-      setErrorMessage(err.message);
+      setErrorMessage(err.message || "Failed to start experiment");
       setStatusMessage("");
     } finally {
       setIsDispatching(false);
     }
   };
 
+  const selectedConnObj = connections.find((c) => c.id === selectedConnection);
+  const isTier1Blocked = selectedConnObj?.operational_tier === "tier_1_read_only";
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Title */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-          <Play className="w-6 h-6 text-indigo-400" />
-          Isolated Benchmark Experiment Orchestrator
-        </h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Configure and execute safe, isolated database workload experiments with dedicated runner isolation and verified session cleanup.
-        </p>
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+        <div>
+          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
+            <Play className="w-5 h-5 text-brand-teal" />
+            <span>ISOLATED BENCHMARK EXPERIMENTS &amp; WORKFLOW</span>
+          </h1>
+          <p className="text-xs text-graphite-200 mt-0.5">
+            Execute reproducible workload scenarios against explicitly authorized Tier 2 database targets.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge variant="tier2">Tier 2 Authorized</Badge>
+          <Badge variant="healthy">pgbench Runner Active</Badge>
+        </div>
       </div>
 
-      {/* Experiment Dispatch Form */}
-      <div className="glass-panel p-6 rounded-2xl space-y-5">
-        <h2 className="text-base font-semibold text-white flex items-center gap-2">
-          <Zap className="w-4 h-4 text-cyan-400" />
-          Launch Benchmark Run
-        </h2>
+      {/* Safety Boundary Banner */}
+      <div className="panel p-3.5 border-graphite-600 bg-graphite-850 flex items-start gap-3 text-xs text-graphite-200 font-mono">
+        <Activity className="w-4 h-4 text-brand-teal shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <span className="font-bold text-graphite-50 uppercase text-[11px] block">
+            Automated Orphan Session Cleanup &amp; Safety Isolation
+          </span>
+          <p className="text-graphite-300 leading-relaxed text-[11px] font-sans">
+            Benchmark workloads run with unique <code className="text-brand-teal font-mono">application_name=trafiora_bench_[id]</code>. Sessions are automatically terminated upon completion, cancellation, or error. Tier 1 read-only databases strictly reject execution.
+          </p>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-          <div className="space-y-1.5">
-            <label className="text-gray-300 font-medium">Experiment Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-            />
+      {/* Experiment Configuration & Launch Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left Column: Launch Form (5 cols) */}
+        <div className="lg:col-span-5 panel p-4 space-y-4">
+          <div className="border-b border-graphite-600 pb-2">
+            <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-brand-teal" />
+              <span>Configure Benchmark Run</span>
+            </h2>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-gray-300 font-medium">Target Database Connection</label>
-            <select
-              value={selectedConnection}
-              onChange={(e) => setSelectedConnection(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-            >
-              {connections.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.host} &bull; {c.operational_tier})
-                </option>
-              ))}
-              {connections.length === 0 && (
-                <option value="">Staging Perf Target (Default)</option>
+          {errorMessage && (
+            <div className="p-2.5 rounded bg-status-errorSurface border border-status-errorBorder text-xs text-status-error font-mono flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {statusMessage && (
+            <div className="p-2.5 rounded bg-status-successSurface border border-status-successBorder text-xs text-status-success font-mono flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{statusMessage}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLaunch} className="space-y-3 text-xs font-mono">
+            <div>
+              <label className="text-graphite-300 block mb-1">Experiment Name / Label</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-graphite-300 block mb-1">Target Connection</label>
+              <select
+                value={selectedConnection}
+                onChange={(e) => setSelectedConnection(e.target.value)}
+                className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+              >
+                {connections.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.operational_tier})
+                  </option>
+                ))}
+              </select>
+              {isTier1Blocked && (
+                <span className="text-[10px] text-status-error block mt-1">
+                  Safety Gate Warning: Tier 1 Read-Only targets will reject execution!
+                </span>
               )}
-            </select>
-          </div>
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-gray-300 font-medium">Workload Scenario Template</label>
-            <select
-              value={selectedScenario}
-              onChange={(e) => setSelectedScenario(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-            >
-              {templates.map((t) => (
-                <option key={t.scenario_type} value={t.scenario_type}>
-                  {t.name}
-                </option>
-              ))}
-              {templates.length === 0 && (
-                <>
-                  <option value="viral_post_spike">Viral Post Sudden Spike (Zipfian Skew alpha=1.6)</option>
-                  <option value="hot_key_contention">Hot Record Row-Lock Contention (FOR UPDATE)</option>
-                  <option value="unindexed_pagination">Deep OFFSET Pagination Sweep</option>
-                  <option value="cache_stampede">Cache Stampede / Thundering Herd</option>
-                </>
-              )}
-            </select>
-          </div>
+            <div>
+              <label className="text-graphite-300 block mb-1">Workload Scenario Template</label>
+              <select
+                value={selectedScenario}
+                onChange={(e) => setSelectedScenario(e.target.value)}
+                className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+              >
+                <option value="viral_post_spike">Viral Post Spike (Zipfian Skew on Hot Records)</option>
+                <option value="heavy_read_aggregation">Heavy Read Aggregation &amp; Joins</option>
+                <option value="burst_write_saturation">Burst Write Inventory Updates</option>
+              </select>
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-gray-300 font-medium">Virtual Users (VUs): {vus}</label>
-            <input
-              type="range"
-              min={1}
-              max={100}
-              value={vus}
-              onChange={(e) => setVus(Number(e.target.value))}
-              className="w-full accent-indigo-500"
-            />
-          </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-graphite-300 block mb-1">Virtual Users (VUs)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={vus}
+                  onChange={(e) => setVus(Number(e.target.value))}
+                  className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 tabular-nums focus:outline-none focus:border-brand-teal"
+                />
+              </div>
+              <div>
+                <label className="text-graphite-300 block mb-1">Duration (s)</label>
+                <input
+                  type="number"
+                  min={5}
+                  max={120}
+                  value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                  className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 tabular-nums focus:outline-none focus:border-brand-teal"
+                />
+              </div>
+              <div>
+                <label className="text-graphite-300 block mb-1">Repetitions (K)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={repetitions}
+                  onChange={(e) => setRepetitions(Number(e.target.value))}
+                  className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 tabular-nums focus:outline-none focus:border-brand-teal"
+                />
+              </div>
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-gray-300 font-medium">Repetitions (K &ge; 5 for 95% Confidence): {repetitions}</label>
-            <input
-              type="range"
-              min={3}
-              max={10}
-              value={repetitions}
-              onChange={(e) => setRepetitions(Number(e.target.value))}
-              className="w-full accent-indigo-500"
-            />
-          </div>
-
-          <div className="space-y-1.5 flex items-center pt-5">
-            <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
+            <div className="flex items-center gap-2 pt-1">
               <input
                 type="checkbox"
+                id="is-baseline"
                 checked={isBaseline}
                 onChange={(e) => setIsBaseline(e.target.checked)}
-                className="rounded border-gray-700 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-graphite-600"
               />
-              <span>Mark as Baseline Experiment</span>
-            </label>
-          </div>
+              <label htmlFor="is-baseline" className="text-graphite-200">
+                Designate this run as Baseline for A/B regression comparisons
+              </label>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isDispatching || isTier1Blocked}
+                className="w-full py-2 px-4 rounded bg-brand-teal hover:bg-brand-tealLight disabled:opacity-50 text-graphite-950 font-bold text-xs font-mono transition-colors shadow-subtle flex items-center justify-center gap-2"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>{isDispatching ? "Launching Benchmark..." : "Launch Isolated Benchmark"}</span>
+              </button>
+            </div>
+          </form>
         </div>
 
-        {errorMessage && (
-          <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-900/60 text-xs text-rose-300 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{errorMessage}</span>
+        {/* Right Column: Execution History & Status Table (7 cols) */}
+        <div className="lg:col-span-7 panel p-4 space-y-3 flex flex-col">
+          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+            <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-brand-teal" />
+              <span>Experiment History &amp; Monitored Runs</span>
+            </h2>
+            <button
+              onClick={loadData}
+              className="text-xs text-graphite-300 hover:text-graphite-100 font-mono flex items-center gap-1"
+            >
+              <RotateCw className="w-3 h-3" />
+              <span>Refresh</span>
+            </button>
           </div>
-        )}
 
-        {statusMessage && (
-          <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-900/60 text-xs text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{statusMessage}</span>
-          </div>
-        )}
-
-        <div className="flex justify-end pt-2">
-          <button
-            onClick={handleDispatch}
-            disabled={isDispatching}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all"
-          >
-            <Play className="w-4 h-4 fill-current" />
-            <span>{isDispatching ? "Dispatching..." : "Launch Experiment"}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Experiments History Table */}
-      <div className="glass-panel p-5 rounded-2xl space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-white">Live Benchmark Experiment Runs</h2>
-          <button onClick={fetchData} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
-            <RotateCw className="w-3.5 h-3.5" />
-            <span>Refresh</span>
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-gray-800 text-gray-400 uppercase tracking-wider text-[10px]">
-              <tr>
-                <th className="py-2.5 px-3">Experiment</th>
-                <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3">Progress</th>
-                <th className="py-2.5 px-3">Throughput</th>
-                <th className="py-2.5 px-3">Latency p95</th>
-                <th className="py-2.5 px-3">Source & Mode</th>
-                <th className="py-2.5 px-3">Outcome</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800/60 font-mono text-xs">
-              {experiments.map((e) => {
-                const metrics = e.summary_metrics || {};
-                const isSim = metrics.is_simulated === true;
-                return (
-                  <tr key={e.id} className="hover:bg-gray-900/40">
-                    <td className="py-3 px-3 font-sans">
-                      <div className="font-semibold text-white">{e.name}</div>
-                      <div className="text-[10px] text-gray-500 font-mono">{e.id.slice(0, 8)}... &bull; {e.is_baseline ? "BASELINE" : "CANDIDATE"}</div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-sans ${
-                        e.status === "COMPLETED" ? "bg-emerald-950 text-emerald-400 border border-emerald-800" :
-                        e.status === "RUNNING" ? "bg-indigo-950 text-indigo-300 border border-indigo-800 animate-pulse" :
-                        "bg-gray-800 text-gray-300"
-                      }`}>
-                        {e.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-gray-300">
-                      {e.repetitions_completed} / {e.repetitions_planned} reps
-                    </td>
-                    <td className="py-3 px-3 text-white font-semibold">
-                      {metrics.tps ? `${metrics.tps} TPS` : "--"}
-                    </td>
-                    <td className="py-3 px-3 text-emerald-400 font-bold">
-                      {metrics.latency_p95_ms ? `${metrics.latency_p95_ms} ms` : "--"}
-                    </td>
-                    <td className="py-3 px-3">
-                      {isSim ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-amber-950/80 text-amber-300 border border-amber-800/60 font-sans" title={metrics.simulation_reason}>
-                          [SIMULATED - DB Offline]
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-sans">
-                          {metrics.measurement_source || "LIVE"}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 font-sans text-[11px] text-gray-300">
-                      {e.outcome_classification}
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-graphite-600 text-[10px] text-graphite-300 uppercase">
+                  <th className="py-2 px-2.5">Experiment</th>
+                  <th className="py-2 px-2.5">Status</th>
+                  <th className="py-2 px-2.5">Progress</th>
+                  <th className="py-2 px-2.5 text-right">Throughput</th>
+                  <th className="py-2 px-2.5 text-right">p95 Latency</th>
+                  <th className="py-2 px-2.5">Source Attribution</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-graphite-600/60">
+                {experiments.map((e) => {
+                  const metrics = e.summary_metrics || {};
+                  const isSim = metrics.is_simulated === true;
+                  return (
+                    <tr key={e.id} className="hover:bg-graphite-850/60 transition-colors">
+                      <td className="py-2.5 px-2.5">
+                        <div className="font-bold text-graphite-100 font-sans">{e.name}</div>
+                        <div className="text-[10px] text-graphite-300 font-mono">
+                          {e.id.slice(0, 8)} &bull; {e.is_baseline ? "BASELINE" : "CANDIDATE"}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-2.5">
+                        <Badge
+                          variant={
+                            e.status === "COMPLETED"
+                              ? "healthy"
+                              : e.status === "RUNNING"
+                              ? "warning"
+                              : "neutral"
+                          }
+                        >
+                          {e.status}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 px-2.5 text-graphite-200 tabular-nums">
+                        {e.repetitions_completed} / {e.repetitions_planned} reps
+                      </td>
+                      <td className="py-2.5 px-2.5 text-right font-bold text-graphite-50 tabular-nums">
+                        {metrics.tps ? `${metrics.tps} TPS` : "--"}
+                      </td>
+                      <td className="py-2.5 px-2.5 text-right font-bold text-brand-teal tabular-nums">
+                        {metrics.latency_p95_ms ? `${metrics.latency_p95_ms} ms` : "--"}
+                      </td>
+                      <td className="py-2.5 px-2.5">
+                        {isSim ? (
+                          <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-graphite-750 text-graphite-300 border border-graphite-600" title={metrics.simulation_reason}>
+                            SIMULATED
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono text-status-success">
+                            {metrics.measurement_source || "LIVE"}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {experiments.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-center text-graphite-400 font-sans">
+                      No experiments registered yet. Configure and launch above.
                     </td>
                   </tr>
-                );
-              })}
-              {experiments.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-4 text-center text-gray-500 font-sans">
-                    No experiments launched yet. Use the form above to run your first benchmark.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

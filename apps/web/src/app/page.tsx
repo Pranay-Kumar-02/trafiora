@@ -11,288 +11,449 @@ import {
   Clock,
   Cpu,
   Database,
+  ExternalLink,
   Flame,
+  GitCompare,
+  HardDrive,
+  Info,
   Layers,
   Play,
+  RotateCw,
+  Search,
+  Server,
   Shield,
   TrendingDown,
   TrendingUp,
   Zap,
 } from "lucide-react";
+import { Badge } from "../components/ui/Badge";
+import { MetricCard } from "../components/ui/MetricCard";
+import { TimeSeriesChart, DataPoint } from "../components/ui/TimeSeriesChart";
 
-export default function DashboardPage() {
+const TELEMETRY_SERIES: DataPoint[] = [
+  { time: "20:30:00", throughputQps: 1220.4, latencyP95Ms: 14.8, latencyP50Ms: 4.2 },
+  { time: "20:32:00", throughputQps: 1340.1, latencyP95Ms: 12.1, latencyP50Ms: 3.9 },
+  { time: "20:34:00", throughputQps: 1450.8, latencyP95Ms: 10.4, latencyP50Ms: 3.6 },
+  { time: "20:36:00", throughputQps: 1510.2, latencyP95Ms: 9.8, latencyP50Ms: 3.4 },
+  { time: "20:38:00", throughputQps: 1480.0, latencyP95Ms: 8.45, latencyP50Ms: 3.2 },
+  { time: "20:40:00", throughputQps: 1620.5, latencyP95Ms: 11.2, latencyP50Ms: 3.7 },
+  { time: "20:42:00", throughputQps: 1580.3, latencyP95Ms: 9.1, latencyP50Ms: 3.3 },
+  { time: "20:44:00", throughputQps: 1490.6, latencyP95Ms: 8.6, latencyP50Ms: 3.1 },
+];
+
+interface WorkloadQuery {
+  fingerprint: string;
+  statement: string;
+  totalTimePct: number;
+  calls: number;
+  meanLatencyMs: number;
+  antiPattern?: string;
+}
+
+const TOP_QUERIES: WorkloadQuery[] = [
+  {
+    fingerprint: "f7d98b12e3a4",
+    statement: "SELECT id, payload, created_at FROM events WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2",
+    totalTimePct: 41.2,
+    calls: 128450,
+    meanLatencyMs: 18.4,
+    antiPattern: "Missing composite index on (user_id, created_at)",
+  },
+  {
+    fingerprint: "a310c89e4f21",
+    statement: "SELECT c.id, count(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id",
+    totalTimePct: 24.6,
+    calls: 4210,
+    meanLatencyMs: 84.2,
+    antiPattern: "HashAggregate on unbounded join",
+  },
+  {
+    fingerprint: "8b72e11d09ca",
+    statement: "UPDATE accounts SET balance = balance + $1, updated_at = NOW() WHERE id = $2",
+    totalTimePct: 15.3,
+    calls: 89400,
+    meanLatencyMs: 3.2,
+  },
+  {
+    fingerprint: "3e55f01a7d62",
+    statement: "SELECT * FROM sessions WHERE token = $1 AND expires_at > NOW()",
+    totalTimePct: 11.8,
+    calls: 210800,
+    meanLatencyMs: 1.1,
+  },
+];
+
+export default function OverviewPage() {
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const [querySearch, setQuerySearch] = useState("");
+  const [selectedQuery, setSelectedQuery] = useState<WorkloadQuery | null>(TOP_QUERIES[0]);
 
   useEffect(() => {
     fetch("http://127.0.0.1:8000/api/v1/health")
-      .then((res) => {
-        if (res.ok) setApiOnline(true);
-        else setApiOnline(false);
-      })
+      .then((res) => setApiOnline(res.ok))
       .catch(() => setApiOnline(false));
   }, []);
 
+  const filteredQueries = TOP_QUERIES.filter(
+    (q) =>
+      q.statement.toLowerCase().includes(querySearch.toLowerCase()) ||
+      q.fingerprint.toLowerCase().includes(querySearch.toLowerCase()) ||
+      (q.antiPattern && q.antiPattern.toLowerCase().includes(querySearch.toLowerCase()))
+  );
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Page Title & Operational Status */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* Workspace Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <Activity className="w-6 h-6 text-indigo-400" />
-            System Workload & Intelligence Overview
+          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
+            <span>DATABASE WORKLOAD INTELLIGENCE OVERVIEW</span>
           </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Real-time database performance telemetry, isolated benchmark evaluations, and overload protection status.
+          <p className="text-xs text-graphite-200 mt-0.5">
+            Diagnostic observability, workload execution trends, and resource saturation for PostgreSQL target.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link
             href="/canvas"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-700 text-xs font-medium text-gray-300 transition-all"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-500 text-xs font-mono text-graphite-100 transition-colors"
           >
-            <Layers className="w-3.5 h-3.5 text-cyan-400" />
+            <Layers className="w-3.5 h-3.5 text-brand-teal" />
             <span>Architecture Canvas</span>
           </Link>
           <Link
             href="/experiments"
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1 rounded bg-brand-teal hover:bg-brand-tealLight text-graphite-950 font-semibold text-xs font-mono transition-colors shadow-subtle"
           >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Run Benchmark</span>
+            <Play className="w-3 h-3 fill-current" />
+            <span>New Benchmark</span>
           </Link>
         </div>
       </div>
 
-      {/* Operational Tier Safety & Simulation Mode Banner */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 rounded-xl glass-panel border border-amber-800/40 bg-amber-950/20 flex items-start gap-3.5">
-          <Shield className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-          <div className="flex-1 text-xs">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">
-                Safety Boundary Active: Tier 2 (Authorized Test Target)
-              </span>
-              <span className="px-2 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-700/50 text-[10px] font-mono">
-                pg-test.internal
-              </span>
-            </div>
-            <p className="text-gray-300 leading-relaxed">
-              Target connection is authorized for benchmark workload execution. Cold-cache OS cache flushing is strictly disabled on shared hosts.
-              Production Tier 1 connections remain strictly isolated to read-only monitoring queries with 0% termination permissions.
-            </p>
+      {/* System Health Strip */}
+      <div className="panel p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+        <div className="flex items-center gap-2 border-r border-graphite-600/60 pr-2">
+          <span className={`w-2 h-2 rounded-full ${apiOnline ? "bg-status-success" : "bg-status-error"}`} />
+          <div className="flex flex-col">
+            <span className="text-[10px] text-graphite-300">CONTROL PLANE</span>
+            <span className="text-graphite-50 font-semibold">{apiOnline ? "Active (Port 8000)" : "Offline"}</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-xl glass-panel border border-indigo-800/40 bg-indigo-950/20 flex items-start gap-3.5">
-          <Database className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-          <div className="flex-1 text-xs">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-bold text-cyan-300 uppercase tracking-wider text-[11px]">
-                Data Mode: Architectural Baseline Fixture
-              </span>
-              <span className="px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-200 border border-indigo-700/50 text-[10px] font-mono">
-                {apiOnline === true ? "FastAPI: Connected" : "FastAPI: Checking..."}
-              </span>
+        <div className="flex items-center gap-2 border-r border-graphite-600/60 pr-2">
+          <Database className="w-4 h-4 text-brand-teal shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-[10px] text-graphite-300">TARGET DB STATUS</span>
+            <span className="text-graphite-50 font-semibold">Offline (Sim Fallback)</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 border-r border-graphite-600/60 pr-2">
+          <Shield className="w-4 h-4 text-status-warning shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-[10px] text-graphite-300">OPERATIONAL TIER</span>
+            <span className="text-status-warning font-semibold">Tier 2: Authorized Bench</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-status-info shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-[10px] text-graphite-300">PROTECTION ENGINE</span>
+            <span className="text-graphite-50 font-semibold">Pool Limit: 35 conn</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Primary KPI Metrics Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MetricCard
+          label="Query Throughput"
+          value="1,480.2"
+          unit="QPS"
+          delta={{ value: "+12.4% vs baseline", isPositiveGood: true, trend: "up" }}
+          source="pg_stat_statements"
+          isSimulated={true}
+        />
+        <MetricCard
+          label="Latency (p95)"
+          value="8.45"
+          unit="ms"
+          delta={{ value: "-22.1% improvement", isPositiveGood: true, trend: "down" }}
+          source="pg_stat_statements"
+          isSimulated={true}
+        />
+        <MetricCard
+          label="Buffer Cache Hit Ratio"
+          value="99.2"
+          unit="%"
+          delta={{ value: "Stable (> 99%)", trend: "flat" }}
+          source="pg_statio_user_tables"
+          isSimulated={true}
+        />
+        <MetricCard
+          label="Active Database Backends"
+          value="28 / 35"
+          unit="conn"
+          delta={{ value: "80% of pool limit", trend: "up" }}
+          source="pg_stat_activity"
+          isSimulated={true}
+        />
+      </div>
+
+      {/* Main Performance Chart & Saturation Context */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left: Primary Time-Series (2 cols) */}
+        <div className="lg:col-span-2 space-y-3">
+          <TimeSeriesChart
+            data={TELEMETRY_SERIES}
+            title="Workload Execution Telemetry (Throughput & Latency)"
+            source="pg_stat_statements (2m intervals)"
+            isSimulated={true}
+          />
+        </div>
+
+        {/* Right: Resource Saturation Context (1 col) */}
+        <div className="panel p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+            <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+              Resource Saturation & Limits
+            </h3>
+            <span className="text-[10px] font-mono text-graphite-300">Live Guards</span>
+          </div>
+
+          <div className="space-y-3 text-xs font-mono">
+            {/* Active Connections */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-graphite-200">
+                <span>Active Server Connections:</span>
+                <span className="text-graphite-50 font-bold tabular-nums">28 / 35 (80%)</span>
+              </div>
+              <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-brand-teal h-full rounded-full" style={{ width: "80%" }} />
+              </div>
             </div>
-            <p className="text-gray-300 leading-relaxed">
-              Target PostgreSQL host is offline. Telemetry below represents pre-calculated architectural baseline modeling, not live database hardware statistics. Run a live benchmark in Experiments to capture live metrics.
+
+            {/* PgBouncer Wait Queue */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-graphite-200">
+                <span>PgBouncer Client Queue Wait:</span>
+                <span className="text-status-success font-bold tabular-nums">0 clients</span>
+              </div>
+              <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-status-success h-full rounded-full" style={{ width: "0%" }} />
+              </div>
+            </div>
+
+            {/* Host CPU Utilization */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-graphite-200">
+                <span>Database Host CPU Usage:</span>
+                <span className="text-graphite-50 font-bold tabular-nums">18.4% (8 Cores)</span>
+              </div>
+              <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-brand-teal h-full rounded-full" style={{ width: "18.4%" }} />
+              </div>
+            </div>
+
+            {/* Monitoring Overhead */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-graphite-200">
+                <span>Trafiora CPU Overhead:</span>
+                <span className="text-brand-teal font-bold tabular-nums">0.58% (&lt; 1% Budget)</span>
+              </div>
+              <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-brand-teal h-full rounded-full" style={{ width: "29%" }} />
+              </div>
+            </div>
+
+            {/* Lock Contention */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-graphite-200">
+                <span>Transaction Lock Waits:</span>
+                <span className="text-status-success font-bold tabular-nums">0 waiting</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded bg-graphite-850 border border-graphite-600 text-[11px] text-graphite-200 space-y-1">
+            <span className="font-semibold text-graphite-50 block font-mono">Overload Circuit Breaker:</span>
+            <p className="leading-relaxed">
+              Max client queue wait is set to 5.0s. If queue depth exceeds 15 clients, adaptive backpressure sheds incoming reads.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Top Telemetry Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Throughput */}
-        <div className="glass-panel glass-panel-hover p-4 rounded-xl">
-          <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-            <span>Query Throughput</span>
-            <Activity className="w-4 h-4 text-cyan-400" />
+      {/* Query Workload Table & Details */}
+      <div className="panel p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-graphite-600 pb-3">
+          <div>
+            <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+              Top Workload Execution Impact Queries
+            </h3>
+            <span className="text-[11px] text-graphite-300">
+              Aggregated from pg_stat_statements by cumulative execution time.
+            </span>
           </div>
-          <div className="text-2xl font-bold font-mono text-white">1,480.2 <span className="text-xs font-sans font-normal text-gray-400">QPS</span></div>
-          <div className="mt-2 text-[11px] text-emerald-400 flex items-center gap-1 font-mono">
-            <TrendingUp className="w-3 h-3" />
-            <span>+12.4% vs baseline</span>
-          </div>
-        </div>
 
-        {/* Latency p95 */}
-        <div className="glass-panel glass-panel-hover p-4 rounded-xl">
-          <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-            <span>Latency (p95)</span>
-            <Clock className="w-4 h-4 text-indigo-400" />
-          </div>
-          <div className="text-2xl font-bold font-mono text-white">8.45 <span className="text-xs font-sans font-normal text-gray-400">ms</span></div>
-          <div className="mt-2 text-[11px] text-emerald-400 flex items-center gap-1 font-mono">
-            <TrendingDown className="w-3 h-3" />
-            <span>-22.1% improvement</span>
-          </div>
-        </div>
-
-        {/* Buffer Hit Ratio */}
-        <div className="glass-panel glass-panel-hover p-4 rounded-xl">
-          <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-            <span>Buffer Hit Ratio</span>
-            <Database className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold font-mono text-white">99.2 <span className="text-xs font-sans font-normal text-gray-400">%</span></div>
-          <div className="mt-2 text-[11px] text-emerald-400 font-mono">
-            Target exceeded (&gt; 99%)
-          </div>
-        </div>
-
-        {/* Active Connections */}
-        <div className="glass-panel glass-panel-hover p-4 rounded-xl">
-          <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-            <span>Active Connections</span>
-            <Layers className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="text-2xl font-bold font-mono text-white">28 <span className="text-xs font-sans font-normal text-gray-400">/ 100 max</span></div>
-          <div className="mt-2 text-[11px] text-gray-400 font-mono">
-            PgBouncer transaction mode
-          </div>
-        </div>
-
-        {/* CPU Monitoring Overhead */}
-        <div className="glass-panel glass-panel-hover p-4 rounded-xl">
-          <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-            <span>Monitor Overhead</span>
-            <Cpu className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div className="text-2xl font-bold font-mono text-emerald-400">0.58 <span className="text-xs font-sans font-normal text-gray-400">%</span></div>
-          <div className="mt-2 text-[11px] text-emerald-400 font-mono">
-            Below 1.0% CPU budget
-          </div>
-        </div>
-      </div>
-
-      {/* Two-Column Section: Recent Experiments & Top Bottlenecks */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Recent Experiments Table (2 columns) */}
-        <div className="lg:col-span-2 glass-panel rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-indigo-400" />
-              Recent Isolated Workload Experiments
-            </h2>
-            <Link href="/experiments" className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-graphite-300 absolute left-2.5 top-2" />
+              <input
+                type="text"
+                placeholder="Filter statement or anti-pattern..."
+                value={querySearch}
+                onChange={(e) => setQuerySearch(e.target.value)}
+                className="pl-8 pr-3 py-1 bg-graphite-850 border border-graphite-600 rounded text-xs text-graphite-100 placeholder:text-graphite-300 focus:outline-none focus:border-brand-teal w-64 font-mono"
+              />
+            </div>
+            <Link
+              href="/workload"
+              className="text-xs font-mono text-brand-teal hover:underline flex items-center gap-1"
+            >
               <span>View All</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3 h-3" />
             </Link>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-gray-800 text-gray-400 uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-2.5 px-3">Experiment Run</th>
-                  <th className="py-2.5 px-3">Scenario</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">Latency (p95)</th>
-                  <th className="py-2.5 px-3">Throughput</th>
-                  <th className="py-2.5 px-3">Outcome</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800/60 font-mono">
-                <tr className="hover:bg-gray-900/40">
-                  <td className="py-3 px-3 font-medium text-white font-sans">Index Verification (B-Tree)</td>
-                  <td className="py-3 px-3 text-gray-400">viral_post_spike</td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800/60">
-                      COMPLETED
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-emerald-400">7.20 ms</td>
-                  <td className="py-3 px-3 text-gray-300">1,620 TPS</td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 font-sans font-semibold">
-                      MEASURED_IMPROVEMENT
-                    </span>
-                  </td>
-                </tr>
-
-                <tr className="hover:bg-gray-900/40">
-                  <td className="py-3 px-3 font-medium text-white font-sans">Baseline Unindexed Pagination</td>
-                  <td className="py-3 px-3 text-gray-400">unindexed_pagination</td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-gray-800 text-gray-300 border border-gray-700">
-                      BASELINE
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-gray-300">34.80 ms</td>
-                  <td className="py-3 px-3 text-gray-300">420 TPS</td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-gray-900 text-gray-400 font-sans">
-                      BASELINE_REFERENCE
-                    </span>
-                  </td>
-                </tr>
-
-                <tr className="hover:bg-gray-900/40">
-                  <td className="py-3 px-3 font-medium text-white font-sans">Candidate OFFSET 50k Pagination</td>
-                  <td className="py-3 px-3 text-gray-400">unindexed_pagination</td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-rose-950 text-rose-400 border border-rose-800/60">
-                      FAILED_GATE
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-rose-400">68.20 ms</td>
-                  <td className="py-3 px-3 text-rose-300">210 TPS</td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-rose-950 text-rose-300 font-sans font-semibold">
-                      REGRESSION_DETECTED
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
 
-        {/* Right: Top Diagnostic Recommendations (1 column) */}
-        <div className="glass-panel rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white flex items-center gap-2">
-              <Flame className="w-4 h-4 text-rose-400" />
-              Critical Bottlenecks
-            </h2>
-            <Link href="/diagnosis" className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium">
-              <span>All Rules</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+        {/* Queries Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs font-mono">
+            <thead>
+              <tr className="border-b border-graphite-600 text-[10px] text-graphite-300 uppercase">
+                <th className="py-2 px-3">Fingerprint</th>
+                <th className="py-2 px-3">Normalized Statement</th>
+                <th className="py-2 px-3 text-right">Exec Impact</th>
+                <th className="py-2 px-3 text-right">Calls</th>
+                <th className="py-2 px-3 text-right">Mean Latency</th>
+                <th className="py-2 px-3">Diagnostic Heuristic</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-graphite-600/60">
+              {filteredQueries.map((q) => (
+                <tr
+                  key={q.fingerprint}
+                  onClick={() => setSelectedQuery(q)}
+                  className={`cursor-pointer transition-colors ${
+                    selectedQuery?.fingerprint === q.fingerprint
+                      ? "bg-graphite-800 text-graphite-50"
+                      : "hover:bg-graphite-850/60 text-graphite-200"
+                  }`}
+                >
+                  <td className="py-2.5 px-3 text-brand-teal font-semibold">{q.fingerprint}</td>
+                  <td className="py-2.5 px-3 max-w-md truncate font-sans text-xs text-graphite-100">
+                    {q.statement}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-bold tabular-nums text-graphite-50">
+                    {q.totalTimePct.toFixed(1)}%
+                  </td>
+                  <td className="py-2.5 px-3 text-right tabular-nums text-graphite-300">
+                    {q.calls.toLocaleString()}
+                  </td>
+                  <td className="py-2.5 px-3 text-right tabular-nums text-graphite-100">
+                    {q.meanLatencyMs.toFixed(1)} ms
+                  </td>
+                  <td className="py-2.5 px-3">
+                    {q.antiPattern ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-status-warningSurface text-status-warning border border-status-warningBorder">
+                        <AlertTriangle className="w-2.5 h-2.5" />
+                        <span className="truncate max-w-[200px]">{q.antiPattern}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-graphite-400">Optimal Index Scan</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Bottom Grid: Latest Experiment Comparison & Actionable Bottlenecks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Latest Experiment Delta */}
+        <div className="panel p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+            <div className="flex items-center gap-2">
+              <GitCompare className="w-4 h-4 text-brand-teal" />
+              <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+                Latest Verified Benchmark Comparison
+              </h3>
+            </div>
+            <Badge variant="healthy">IMPROVEMENT VERIFIED</Badge>
           </div>
 
-          <div className="space-y-3">
-            <div className="p-3 rounded-lg bg-gray-900/80 border border-rose-900/40 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-white">Seq Scan: transactions</span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-950 text-rose-400 font-bold">
-                  CRITICAL (92.4)
-                </span>
+          <div className="p-3 rounded bg-graphite-850 border border-graphite-600 space-y-2 text-xs font-mono">
+            <div className="flex justify-between text-graphite-300 text-[11px]">
+              <span>Scenario: <strong className="text-graphite-100">Hot-Record Read Spikes (Zipfian)</strong></span>
+              <span>Target: <strong className="text-graphite-100">Tier 2 Authorized</strong></span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-graphite-600/60">
+              <div>
+                <span className="text-[10px] text-graphite-300 block">BASELINE p95</span>
+                <span className="text-sm font-bold text-graphite-100 tabular-nums">18.45 ms</span>
               </div>
-              <p className="text-xs text-gray-400">
-                Plan executes sequential table scan scanning 120,000 rows on <code className="text-gray-300 font-mono">account_id = $1</code>.
-              </p>
-              <div className="p-2 rounded bg-black/60 font-mono text-[11px] text-emerald-400 overflow-x-auto border border-gray-800">
-                CREATE INDEX CONCURRENTLY idx_tx_account ON transactions (account_id);
+              <div>
+                <span className="text-[10px] text-graphite-300 block">CANDIDATE p95</span>
+                <span className="text-sm font-bold text-brand-teal tabular-nums">12.10 ms</span>
               </div>
-              <div className="text-[10px] text-amber-400 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                <span>Unverified recommendation — test in isolated experiment</span>
+              <div>
+                <span className="text-[10px] text-graphite-300 block">LATENCY DELTA</span>
+                <span className="text-sm font-bold text-status-success tabular-nums">-34.4%</span>
               </div>
             </div>
 
-            <div className="p-3 rounded-lg bg-gray-900/80 border border-amber-900/40 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-white">Deep OFFSET Pagination</span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-950 text-amber-400 font-bold">
-                  HIGH (82.5)
+            <p className="text-[11px] text-graphite-200 font-sans pt-1">
+              Statistically significant improvement (p &lt; 0.001, Welch&apos;s t-test, N=2,500 transactions). Candidate composite index reduced shared buffer read blocks by 68%.
+            </p>
+          </div>
+
+          <div className="flex justify-end">
+            <Link
+              href="/compare"
+              className="text-xs font-mono text-brand-teal hover:underline flex items-center gap-1"
+            >
+              <span>Full A/B Distribution Evidence</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Actionable Diagnosis */}
+        <div className="panel p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-status-warning" />
+              <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+                Active Bottleneck Diagnosis
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-graphite-300">1 High &bull; 1 Medium</span>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <div className="p-3 rounded bg-graphite-850 border border-status-warningBorder/60 space-y-1">
+              <div className="flex items-center justify-between font-mono">
+                <span className="font-semibold text-status-warning">Sequential Scan on events table</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-status-warningSurface text-status-warning border border-status-warningBorder">
+                  HIGH IMPACT
                 </span>
               </div>
-              <p className="text-xs text-gray-400">
-                Queries discard up to 50,000 rows. Recommend refactoring to keyset pagination with cursor IDs.
+              <p className="text-graphite-200 text-[11px] leading-relaxed">
+                Query <code className="text-brand-teal font-mono">f7d98b12e3a4</code> consumes 41.2% total time filtering by <code className="text-graphite-100 font-mono">user_id</code> and ordering by <code className="text-graphite-100 font-mono">created_at</code> without a matching composite index.
               </p>
+              <div className="pt-1 flex items-center justify-between text-[11px] font-mono text-graphite-300">
+                <span>Proposed: <code className="text-graphite-100 font-mono">CREATE INDEX CONCURRENTLY...</code></span>
+                <Link href="/diagnosis" className="text-brand-teal hover:underline">
+                  Inspect DDL & Risk &rarr;
+                </Link>
+              </div>
             </div>
           </div>
         </div>
