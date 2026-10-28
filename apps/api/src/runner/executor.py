@@ -2,11 +2,13 @@
 import asyncio
 import logging
 import math
+import os
 import random
 import statistics
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
+import psycopg
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,9 +20,10 @@ from ..models.metric import MetricSampleModel
 from ..models.scenario import WorkloadScenarioModel
 from ..schemas.connection import OperationalTier
 from ..schemas.experiment import ExperimentOutcome, ExperimentStatus
-from .pgbench_runner import PgBenchRunner
+from .pgbench_runner import PgBenchRunner, resolve_ssl_mode
 
 logger = logging.getLogger(__name__)
+
 
 
 class BenchmarkSafetyViolation(Exception):
@@ -142,6 +145,8 @@ class BenchmarkExecutor:
                     vus=vus,
                     duration_s=duration_s,
                     query_templates=query_templates,
+                    ssl_mode=connection.ssl_mode,
+                    is_disposable_sandbox=connection.is_disposable_sandbox,
                 )
                 last_bench_res = bench_res
 
@@ -152,21 +157,21 @@ class BenchmarkExecutor:
                 rep_tps_list.append(rep_tps)
                 experiment.repetitions_completed = rep + 1
 
-                # Record metric sample for this repetition
+                # Record metric sample for this repetition - ONLY genuine measurements or None
                 sample = MetricSampleModel(
                     experiment_id=experiment.id,
                     repetition_index=rep + 1,
                     timestamp_offset_ms=(rep + 1) * 1000,
                     latency_p50=bench_res.latency_p50_ms,
-                    latency_p90=round(rep_p95 * 0.90, 2) if rep_p95 is not None else None,
+                    latency_p90=bench_res.latency_p90_ms,
                     latency_p95=rep_p95,
                     latency_p99=bench_res.latency_p99_ms,
                     tps=rep_tps,
                     error_count=bench_res.error_count,
-                    buffer_hit_ratio=0.985 if zipf_alpha > 1.0 else 0.942,
+                    buffer_hit_ratio=None,
                     active_connections=vus if bench_res.success else 0,
-                    statement_exec_ratio=0.005 if bench_res.success else None,
-                    host_cpu_percent=min(95.0, 15.0 + vus * 0.8) if bench_res.success else None,
+                    statement_exec_ratio=None,
+                    host_cpu_percent=None,
                 )
                 session.add(sample)
                 await session.commit()
@@ -216,17 +221,57 @@ class BenchmarkExecutor:
             measurement_source = last_bench_res.measurement_source if last_bench_res else "UNKNOWN"
             simulation_reason = last_bench_res.simulation_reason if last_bench_res else None
 
+            # Collect genuine catalog buffer cache hit ratio if live target is connected
+            measured_buffer_hit: Optional[float] = None
+            if last_bench_res and not is_simulated and measurement_source != "WIRE_EMULATOR_SANDBOX":
+                try:
+                    r_ssl = resolve_ssl_mode(connection.host, connection.ssl_mode, connection.is_disposable_sandbox)
+                    check_conninfo = (
+                        f"host={connection.host} port={connection.port} dbname={connection.database_name} "
+                        f"user={connection.username} password={decrypted_pw} connect_timeout=3 sslmode={r_ssl}"
+                    )
+                    async with await psycopg.AsyncConnection.connect(check_conninfo, autocommit=True, prepare_threshold=None) as cat_conn:
+                        async with cat_conn.cursor() as cur:
+                            await cur.execute(
+                                "SELECT COALESCE(sum(blks_hit) * 1.0 / NULLIF(sum(blks_hit + blks_read), 0), 1.0) "
+                                "FROM pg_stat_database WHERE datname = current_database();"
+                            )
+                            b_row = await cur.fetchone()
+                            if b_row and b_row[0] is not None:
+                                measured_buffer_hit = round(float(b_row[0]), 4)
+                except Exception as b_err:
+                    logger.debug("Failed reading catalog buffer hit ratio: %s", b_err)
+                    measured_buffer_hit = None
+
+            # Collect genuine host CPU metric if available from real system source
+            measured_host_cpu: Optional[float] = None
+            host_cpu_source = "UNKNOWN (HOST_METRICS_UNAVAILABLE)"
+            try:
+                if connection.host in ("127.0.0.1", "localhost", "::1"):
+                    import psutil
+                    cpu_val = psutil.cpu_percent(interval=None)
+                    if cpu_val > 0.0:
+                        measured_host_cpu = round(cpu_val, 1)
+                        host_cpu_source = "LOCAL_HOST_PSUTIL"
+                elif os.path.exists("/sys/fs/cgroup/cpu.stat"):
+                    host_cpu_source = "LINUX_CGROUPS_V2"
+            except Exception:
+                pass
+
             experiment.status = ExperimentStatus.COMPLETED.value
             experiment.completed_at = datetime.now(timezone.utc)
             experiment.outcome_classification = outcome
             experiment.summary_metrics = {
                 "tps": mean_tps,
                 "latency_p50_ms": last_bench_res.latency_p50_ms if last_bench_res else None,
+                "latency_p90_ms": last_bench_res.latency_p90_ms if last_bench_res else None,
                 "latency_p95_ms": mean_p95,
                 "latency_p99_ms": last_bench_res.latency_p99_ms if last_bench_res else None,
                 "error_rate": 0.0,
-                "buffer_hit_ratio": 0.985 if zipf_alpha > 1.0 else 0.942,
-                "cpu_overhead_percent": 0.65 if not is_simulated else None,
+                "buffer_hit_ratio": measured_buffer_hit,
+                "host_cpu_percent": measured_host_cpu,
+                "host_cpu_source": host_cpu_source,
+                "cpu_overhead_percent": None,
                 "confidence_interval_95": ci_95,
                 "coefficient_of_variation": cv,
                 "repetitions_p95": rep_latencies_p95 if rep_latencies_p95 else None,
@@ -237,6 +282,7 @@ class BenchmarkExecutor:
 
             await session.commit()
             logger.info("Experiment %s completed (%s) with outcome %s", experiment_id, measurement_source, outcome)
+
 
 
         except asyncio.CancelledError:

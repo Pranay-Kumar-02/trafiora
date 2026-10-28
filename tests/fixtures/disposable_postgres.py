@@ -1,7 +1,9 @@
-"""In-process disposable PostgreSQL v3 protocol wire server for end-to-end integration tests.
+"""In-process disposable PostgreSQL v3 wire-protocol emulator for resilience and protocol testing.
 
-Provides a 100% reliable, zero-dependency disposable PostgreSQL 18.6 target supporting
-native psycopg connections, capability probing, catalog telemetry, and benchmark execution.
+IMPORTANT NOTICE:
+This fixture is a wire-protocol emulator for testing client protocol negotiation, network failure
+resilience, and API error states. It is NOT a real PostgreSQL database server. Its canned responses
+must NEVER be labelled as live PostgreSQL catalog telemetry or used to claim real database performance.
 """
 import asyncio
 import logging
@@ -85,7 +87,7 @@ class DisposablePostgresServer:
 
             # 3. Send parameters
             params = [
-                (b"server_version", b"18.6"),
+                (b"server_version", b"18.6 (Wire Protocol Emulator)"),
                 (b"client_encoding", b"UTF8"),
                 (b"standard_conforming_strings", b"on"),
                 (b"DateStyle", b"ISO, MDY"),
@@ -118,7 +120,7 @@ class DisposablePostgresServer:
                     # Handle queries based on pattern
                     if "SERVER_VERSION" in sql_norm:
                         desc = _pack_row_description([("server_version", 25)])
-                        row = _pack_data_row(["18.6"])
+                        row = _pack_data_row(["18.6 (Wire Protocol Emulator)"])
                         writer.write(desc + row + _pack_command_complete("SELECT 1") + _pack_ready_for_query())
                     elif "PG_EXTENSION" in sql_norm and "PG_STAT_STATEMENTS" in sql_norm:
                         desc = _pack_row_description([("count", 20)])

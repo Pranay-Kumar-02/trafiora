@@ -252,13 +252,16 @@ async def get_connection_queries(
             "shared_blks_read": q.get("shared_blks_read", 0),
         })
 
+    is_wire_emulator = bool(caps.get("is_wire_emulator"))
+    source = "WIRE_EMULATOR_SANDBOX" if is_wire_emulator else "pg_stat_statements"
+
     return {
         "connection_id": connection_id,
         "connected": True,
         "has_pg_stat_statements": True,
-        "measurement_source": "pg_stat_statements",
-        "message": f"Retrieved {len(formatted_queries)} statements from pg_stat_statements.",
+        "measurement_source": source,
+        "message": f"Retrieved {len(formatted_queries)} statements from {source}.",
         "queries": formatted_queries,
-        "is_simulated": False,
+        "is_simulated": is_wire_emulator,
     }
 

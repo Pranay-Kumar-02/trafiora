@@ -13,6 +13,22 @@ jobs:
   backend-test:
     name: Backend Tests & Lint
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: trafiora_tester
+          POSTGRES_PASSWORD: trafiora_test_password
+          POSTGRES_DB: trafiora_test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          -c shared_preload_libraries=pg_stat_statements
+          -c pg_stat_statements.track=all
+        ports:
+          - 5432:5432
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -27,9 +43,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r apps/api/requirements.txt
-          pip install pytest pytest-asyncio httpx sqlglot
+          pip install pytest pytest-asyncio httpx sqlglot psutil
 
       - name: Run Backend Unit & Integration Tests
+        env:
+          TEST_POSTGRES_HOST: 127.0.0.1
+          TEST_POSTGRES_PORT: 5432
+          TEST_POSTGRES_USER: trafiora_tester
+          TEST_POSTGRES_PASSWORD: trafiora_test_password
+          TEST_POSTGRES_DB: trafiora_test_db
         run: |
           python -m pytest tests/backend -v
 
@@ -54,3 +76,8 @@ jobs:
       - name: Typecheck Next.js application
         working-directory: apps/web
         run: npx tsc --noEmit
+
+      - name: Build Next.js application
+        working-directory: apps/web
+        run: npm run build
+

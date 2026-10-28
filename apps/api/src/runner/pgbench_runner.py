@@ -12,6 +12,36 @@ import psycopg
 logger = logging.getLogger(__name__)
 
 
+LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "0.0.0.0"}
+
+
+def resolve_ssl_mode(
+    host: str,
+    requested_ssl_mode: Optional[str] = None,
+    is_disposable_sandbox: bool = False,
+) -> str:
+    """Enforces connection transport security policy.
+
+    Disabling TLS (sslmode=disable) is strictly prohibited for remote targets
+    and only permitted for verified loopback interfaces or explicit disposable test sandboxes.
+    """
+    mode = (requested_ssl_mode or "prefer").strip().lower()
+    is_local = host.strip().lower() in LOCAL_HOSTS
+
+    if mode == "disable":
+        if is_local or is_disposable_sandbox:
+            return "disable"
+        raise ValueError(
+            f"Security policy violation: Disabling TLS (sslmode=disable) is strictly prohibited on remote "
+            f"target '{host}'. Remote targets require verified TLS transport encryption."
+        )
+
+    if not is_local and mode in ("disable", "allow"):
+        return "require"
+
+    return mode
+
+
 class PgBenchResult:
     """Parsed output from a benchmark execution run."""
     def __init__(
@@ -20,6 +50,7 @@ class PgBenchResult:
         tps: float = 0.0,
         latency_avg_ms: Optional[float] = None,
         latency_p50_ms: Optional[float] = None,
+        latency_p90_ms: Optional[float] = None,
         latency_p95_ms: Optional[float] = None,
         latency_p99_ms: Optional[float] = None,
         error_count: int = 0,
@@ -32,6 +63,7 @@ class PgBenchResult:
         self.tps = tps
         self.latency_avg_ms = latency_avg_ms
         self.latency_p50_ms = latency_p50_ms
+        self.latency_p90_ms = latency_p90_ms
         self.latency_p95_ms = latency_p95_ms
         self.latency_p99_ms = latency_p99_ms
         self.error_count = error_count
@@ -47,6 +79,7 @@ class PgBenchResult:
             "tps": self.tps,
             "latency_avg_ms": self.latency_avg_ms,
             "latency_p50_ms": self.latency_p50_ms,
+            "latency_p90_ms": self.latency_p90_ms,
             "latency_p95_ms": self.latency_p95_ms,
             "latency_p99_ms": self.latency_p99_ms,
             "error_count": self.error_count,
@@ -55,6 +88,7 @@ class PgBenchResult:
             "measurement_source": self.measurement_source,
             "simulation_reason": self.simulation_reason,
         }
+
 
 
 
@@ -93,6 +127,7 @@ class PgBenchRunner:
             lat_avg = round(float(lat_match.group(1)), 2)
 
         lat_p50: Optional[float] = None
+        lat_p90: Optional[float] = None
         lat_p95: Optional[float] = None
         lat_p99: Optional[float] = None
 
@@ -120,16 +155,18 @@ class PgBenchRunner:
                 latencies_ms.sort()
                 count = len(latencies_ms)
                 lat_p50 = round(latencies_ms[int(count * 0.50)], 2)
+                lat_p90 = round(latencies_ms[int(count * 0.90)], 2)
                 lat_p95 = round(latencies_ms[int(count * 0.95)], 2)
                 lat_p99 = round(latencies_ms[min(count - 1, int(count * 0.99))], 2)
                 lat_avg = round(sum(latencies_ms) / count, 2)
 
-        # NEVER estimate p95 = lat_avg * 1.6. When genuine latency data is absent, return None.
+        # NEVER estimate p95 = lat_avg * 1.6 or p90 = p95 * 0.90. When genuine latency data is absent, return None.
         return PgBenchResult(
             success=tps > 0,
             tps=round(tps, 1),
             latency_avg_ms=lat_avg,
             latency_p50_ms=lat_p50,
+            latency_p90_ms=lat_p90,
             latency_p95_ms=lat_p95,
             latency_p99_ms=lat_p99,
             error_count=0,
@@ -150,22 +187,36 @@ class PgBenchRunner:
         vus: int,
         duration_s: int,
         query_templates: List[str],
+        ssl_mode: Optional[str] = None,
+        is_disposable_sandbox: bool = False,
     ) -> PgBenchResult:
         """Executes real concurrent workload queries using async psycopg connections against target database."""
+        resolved_ssl = resolve_ssl_mode(host, ssl_mode, is_disposable_sandbox)
         app_name = f"trafiora_bench_{experiment_id}"
         conninfo = (
             f"host={host} port={port} dbname={database} user={username} "
-            f"password={password} application_name={app_name} connect_timeout=2 sslmode=disable"
+            f"password={password} application_name={app_name} connect_timeout=3 sslmode={resolved_ssl}"
         )
 
         # Probe connectivity first to fail fast if target is unreachable
+        is_wire_emulator = False
         try:
             probe_conn = await psycopg.AsyncConnection.connect(
-                conninfo, connect_timeout=2, prepare_threshold=None
+                conninfo, connect_timeout=3, prepare_threshold=None
             )
-            await probe_conn.close()
+            try:
+                async with probe_conn.cursor() as cur:
+                    await cur.execute("SHOW server_version;")
+                    row = await cur.fetchone()
+                    if row and ("emulator" in str(row[0]).lower() or "mock" in str(row[0]).lower()):
+                        is_wire_emulator = True
+            except Exception:
+                pass
+            finally:
+                await probe_conn.close()
         except Exception as probe_err:
-            raise RuntimeError(f"Database target probe failed ({host}:{port}): {probe_err}") from probe_err
+            sanitized_err = re.sub(r"password=\S+", "password=***", str(probe_err))
+            raise RuntimeError(f"Database target probe failed ({host}:{port}, sslmode={resolved_ssl}): {sanitized_err}") from probe_err
 
         latencies_ms: List[float] = []
         errors = 0
@@ -178,7 +229,7 @@ class PgBenchRunner:
             conn = None
             try:
                 conn = await psycopg.AsyncConnection.connect(
-                    conninfo, autocommit=True, prepare_threshold=None, connect_timeout=2
+                    conninfo, autocommit=True, prepare_threshold=None, connect_timeout=3
                 )
                 async with conn.cursor() as cur:
                     while not stop_event.is_set():
@@ -199,7 +250,8 @@ class PgBenchRunner:
                                 logger.debug("Worker query failed: %s", query_exc)
                             await asyncio.sleep(0.002)
             except Exception as conn_exc:
-                logger.warning("Native worker connection failed: %s", conn_exc)
+                sanitized_exc = re.sub(r"password=\S+", "password=***", str(conn_exc))
+                logger.warning("Native worker connection failed: %s", sanitized_exc)
                 errors += 1
             finally:
                 if conn is not None:
@@ -222,22 +274,29 @@ class PgBenchRunner:
         latencies_ms.sort()
         count = len(latencies_ms)
         p50 = round(latencies_ms[int(count * 0.50)], 2)
+        p90 = round(latencies_ms[int(count * 0.90)], 2)
         p95 = round(latencies_ms[int(count * 0.95)], 2)
         p99 = round(latencies_ms[min(count - 1, int(count * 0.99))], 2)
         avg_lat = round(sum(latencies_ms) / count, 2)
         actual_tps = round(count / float(duration_s), 1)
 
+        source = "WIRE_EMULATOR_SANDBOX" if is_wire_emulator else "PSYCOPG_NATIVE_POOL"
         return PgBenchResult(
             success=True,
             tps=actual_tps,
             latency_avg_ms=avg_lat,
             latency_p50_ms=p50,
+            latency_p90_ms=p90,
             latency_p95_ms=p95,
             latency_p99_ms=p99,
             error_count=errors,
-            raw_output=f"Executed {count} genuine statements across {vus} VUs over {duration_s}s",
-            is_simulated=False,
-            measurement_source="PSYCOPG_NATIVE_POOL",
+            raw_output=f"Executed {count} genuine statements across {vus} VUs over {duration_s}s ({source})",
+            is_simulated=is_wire_emulator,
+            measurement_source=source,
+            simulation_reason=(
+                "Target is a wire-protocol emulator; timings do not reflect real PostgreSQL engine performance."
+                if is_wire_emulator else None
+            ),
         )
 
     async def execute(
@@ -251,6 +310,8 @@ class PgBenchRunner:
         vus: int,
         duration_s: int,
         query_templates: List[str],
+        ssl_mode: Optional[str] = None,
+        is_disposable_sandbox: bool = False,
     ) -> PgBenchResult:
         """Executes pgbench subprocess, native psycopg pool, or explicit labeled fallback."""
         app_name = f"trafiora_bench_{experiment_id}"
@@ -265,9 +326,11 @@ class PgBenchRunner:
             tmp_log_dir = tempfile.mkdtemp(prefix="pgbench_logs_")
             log_prefix = os.path.join(tmp_log_dir, "pgbench_log")
 
+            resolved_ssl = resolve_ssl_mode(host, ssl_mode, is_disposable_sandbox)
             env = os.environ.copy()
             env["PGPASSWORD"] = password
             env["PGAPPNAME"] = app_name
+            env["PGSSLMODE"] = resolved_ssl
 
             cmd = [
                 self.pgbench_bin,
@@ -317,9 +380,12 @@ class PgBenchRunner:
                 vus=vus,
                 duration_s=duration_s,
                 query_templates=query_templates,
+                ssl_mode=ssl_mode,
+                is_disposable_sandbox=is_disposable_sandbox,
             )
         except Exception as e:
-            logger.info("Live target execution unavailable: %s", e)
+            sanitized_msg = re.sub(r"password=\S+", "password=***", str(e))
+            logger.info("Live target execution unavailable: %s", sanitized_msg)
 
         # 3. Explicitly labeled simulated fallback when live PostgreSQL is offline
         await asyncio.sleep(0.05)
@@ -328,6 +394,7 @@ class PgBenchRunner:
             tps=0.0,
             latency_avg_ms=None,
             latency_p50_ms=None,
+            latency_p90_ms=None,
             latency_p95_ms=None,
             latency_p99_ms=None,
             error_count=0,
@@ -339,4 +406,5 @@ class PgBenchRunner:
                 "Reliable latency percentiles cannot be measured and are reported as null/unavailable."
             ),
         )
+
 

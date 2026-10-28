@@ -66,11 +66,14 @@ class PostgresAdapter(DatabaseAdapter):
                     hypo_row = await cur.fetchone()
                     has_hypopg = bool(hypo_row and hypo_row[0] > 0)
 
+                    is_wire_emulator = "emulator" in server_version.lower() or "mock" in server_version.lower()
+
                     return {
                         "connected": True,
                         "engine": "postgresql",
                         "server_version": server_version,
                         "target_certified": server_version.startswith("18"),
+                        "is_wire_emulator": is_wire_emulator,
                         "has_pg_stat_statements": has_pg_stat,
                         "has_hypopg": has_hypopg,
                         "host_cpu_measurement_source": host_cpu_source,
@@ -244,10 +247,18 @@ class PostgresAdapter(DatabaseAdapter):
                     max_conn_row = await cur.fetchone()
                     max_connections = int(max_conn_row[0]) if max_conn_row else 100
 
+                    # Check if target is a wire-protocol emulator
+                    await cur.execute("SHOW server_version;")
+                    sv_row = await cur.fetchone()
+                    sv_text = str(sv_row[0]) if sv_row and sv_row[0] else ""
+                    is_wire_emulator = "emulator" in sv_text.lower() or "mock" in sv_text.lower()
+
+                    source = "WIRE_EMULATOR_SANDBOX" if is_wire_emulator else "POSTGRES_CATALOG"
                     return {
                         "connected": True,
                         "status": "ONLINE",
-                        "measurement_source": "POSTGRES_CATALOG",
+                        "measurement_source": source,
+                        "is_wire_emulator": is_wire_emulator,
                         "buffer_cache_hit_ratio": buffer_hit_ratio,
                         "active_backends": active_backends or total_client_backends,
                         "max_connections": max_connections,
@@ -257,7 +268,7 @@ class PostgresAdapter(DatabaseAdapter):
                         "cumulative_calls": pg_stat_calls,
                         "cumulative_exec_time_ms": pg_stat_total_time_ms,
                         "overall_avg_latency_ms": pg_stat_avg_ms,
-                        "is_simulated": False,
+                        "is_simulated": is_wire_emulator,
                     }
         except Exception as e:
             return {

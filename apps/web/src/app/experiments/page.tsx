@@ -367,13 +367,27 @@ export default function ExperimentsPage() {
                         {metrics.latency_p95_ms ? `${metrics.latency_p95_ms} ms` : "--"}
                       </td>
                       <td className="py-2.5 px-2.5">
-                        {isSim ? (
-                          <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-graphite-750 text-graphite-300 border border-graphite-600" title={metrics.simulation_reason}>
+                        {metrics.measurement_source === "WIRE_EMULATOR_SANDBOX" ? (
+                          <span
+                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-700/60"
+                            title="Executed against in-process wire-protocol emulator; not real database performance"
+                          >
+                            EMULATOR (SANDBOX)
+                          </span>
+                        ) : isSim ? (
+                          <span
+                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-graphite-750 text-graphite-300 border border-graphite-600"
+                            title={metrics.simulation_reason || "Simulated offline benchmark"}
+                          >
                             SIMULATED
                           </span>
+                        ) : metrics.measurement_source === "PGBENCH_SUBPROCESS" ? (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 font-semibold">
+                            PGBENCH (VERIFIED LIVE)
+                          </span>
                         ) : (
-                          <span className="text-[10px] font-mono text-status-success">
-                            {metrics.measurement_source || "LIVE"}
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 font-semibold">
+                            PSYCOPG (VERIFIED LIVE)
                           </span>
                         )}
                       </td>

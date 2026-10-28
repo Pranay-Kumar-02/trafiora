@@ -236,7 +236,12 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
                   Statistical Outcome: {candidate.outcome_classification}
                 </span>
                 <span className="px-1.5 py-0.2 rounded bg-graphite-800 text-graphite-200 border border-graphite-600 font-mono text-[10px]">
-                  K = {candidate.repetitions_completed} Repetitions
+                  K = {candidate.repetitions_completed} Repetitions &bull;{" "}
+                  {candidate.summary_metrics?.measurement_source === "WIRE_EMULATOR_SANDBOX"
+                    ? "EMULATOR (SANDBOX)"
+                    : candidate.summary_metrics?.is_simulated
+                    ? "SIMULATED"
+                    : candidate.summary_metrics?.measurement_source || "MEASURED"}
                 </span>
               </div>
               <p className="text-graphite-200 leading-relaxed text-[11px]">
