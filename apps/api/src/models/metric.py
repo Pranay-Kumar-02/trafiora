@@ -14,10 +14,10 @@ class MetricSampleModel(Base):
     repetition_index: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     timestamp_offset_ms: Mapped[int] = mapped_column(Integer, nullable=False)
     
-    latency_p50: Mapped[float] = mapped_column(Float, nullable=False)
-    latency_p90: Mapped[float] = mapped_column(Float, nullable=False)
-    latency_p95: Mapped[float] = mapped_column(Float, nullable=False)
-    latency_p99: Mapped[float] = mapped_column(Float, nullable=False)
+    latency_p50: Mapped[float | None] = mapped_column(Float, nullable=True)
+    latency_p90: Mapped[float | None] = mapped_column(Float, nullable=True)
+    latency_p95: Mapped[float | None] = mapped_column(Float, nullable=True)
+    latency_p99: Mapped[float | None] = mapped_column(Float, nullable=True)
     
     tps: Mapped[float] = mapped_column(Float, nullable=False)
     error_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

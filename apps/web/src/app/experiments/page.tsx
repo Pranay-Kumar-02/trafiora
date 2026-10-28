@@ -14,6 +14,7 @@ import {
   StopCircle,
   Zap,
 } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 import { Badge } from "../../components/ui/Badge";
 
 interface ScenarioTemplate {
@@ -63,28 +64,21 @@ export default function ExperimentsPage() {
 
   const loadData = async () => {
     try {
-      const [tplRes, connRes, expRes] = await Promise.all([
-        fetch("http://127.0.0.1:8000/api/v1/scenarios/templates").catch(() => null),
-        fetch("http://127.0.0.1:8000/api/v1/connections").catch(() => null),
-        fetch("http://127.0.0.1:8000/api/v1/experiments").catch(() => null),
+      const [tplData, connData, expData] = await Promise.all([
+        apiClient.get<ScenarioTemplate[]>("/scenarios/templates").catch(() => []),
+        apiClient.get<ConnectionOption[]>("/connections").catch(() => []),
+        apiClient.get<ExperimentItem[]>("/experiments").catch(() => []),
       ]);
 
-      if (tplRes && tplRes.ok) {
-        const tplData = await tplRes.json();
-        setTemplates(tplData);
-      }
-      if (connRes && connRes.ok) {
-        const connData = await connRes.json();
+      if (Array.isArray(tplData)) setTemplates(tplData);
+      if (Array.isArray(connData)) {
         setConnections(connData);
         if (connData.length > 0 && !selectedConnection) {
           const authorized = connData.find((c: any) => c.operational_tier === "tier_2_workload_benchmark");
           setSelectedConnection(authorized ? authorized.id : connData[0].id);
         }
       }
-      if (expRes && expRes.ok) {
-        const expData = await expRes.json();
-        setExperiments(expData);
-      }
+      if (Array.isArray(expData)) setExperiments(expData);
     } catch {
       // Keep existing data
     }
@@ -98,38 +92,40 @@ export default function ExperimentsPage() {
 
   const handleLaunch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedConnection) {
+      setErrorMessage("Please select an authorized PostgreSQL database connection.");
+      return;
+    }
+
     setIsDispatching(true);
     setErrorMessage("");
-    setStatusMessage("Validating scenario and database safety authorization...");
+    setStatusMessage("Validating scenario and dispatching isolated benchmark run...");
 
     try {
-      const payload = {
-        name,
-        target_connection_id: selectedConnection,
-        is_baseline: isBaseline,
-        repetitions: Number(repetitions),
-        scenario: {
-          scenario_type: selectedScenario,
-          parameters: {
-            vus: Number(vus),
-            duration_seconds: Number(duration),
-            zipf_alpha: 1.2,
-          },
+      // 1. Create workload scenario configuration
+      const scenRes = await apiClient.post<{ id: string }>("/scenarios", {
+        name: `${name} Scenario`,
+        scenario_type: selectedScenario,
+        config: {
+          vus: Number(vus),
+          duration_seconds: Number(duration),
+          zipf_alpha: 1.2,
+          warmup_seconds: 2,
+          read_write_ratio: 0.9,
+          query_templates: ["SELECT 1;"],
         },
-      };
-
-      const res = await fetch("http://127.0.0.1:8000/api/v1/experiments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Launch rejected" }));
-        throw new Error(err.detail || "Experiment execution failed");
-      }
+      // 2. Dispatch experiment with valid schema parameters
+      await apiClient.post("/experiments", {
+        name: name.trim(),
+        connection_id: selectedConnection,
+        scenario_id: scenRes.id,
+        is_baseline: isBaseline,
+        repetitions_planned: Number(repetitions),
+      });
 
-      setStatusMessage("Experiment dispatched. Benchmark worker active.");
+      setStatusMessage("Experiment dispatched. Benchmark worker actively sampling workload.");
       await loadData();
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to start experiment");
@@ -138,6 +134,7 @@ export default function ExperimentsPage() {
       setIsDispatching(false);
     }
   };
+
 
   const selectedConnObj = connections.find((c) => c.id === selectedConnection);
   const isTier1Blocked = selectedConnObj?.operational_tier === "tier_1_read_only";

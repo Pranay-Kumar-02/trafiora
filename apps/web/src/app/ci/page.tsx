@@ -99,6 +99,7 @@ export default function CIPage() {
 
         <div className="flex items-center gap-2">
           <Badge variant="healthy">GitHub Actions Gate Active</Badge>
+          <Badge variant="simulated">SIMULATED DEMO RUNS</Badge>
           <Badge variant="tier2">CLI: trafiora eval-ci</Badge>
         </div>
       </div>
@@ -139,9 +140,14 @@ export default function CIPage() {
       {/* CI Runs Table */}
       <div className="panel p-4 space-y-3">
         <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
-          <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
-            Pull Request Evaluation History
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+              Pull Request Evaluation History
+            </h2>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+              SIMULATED REFERENCE DATASET
+            </span>
+          </div>
           <span className="text-[10px] font-mono text-graphite-300">
             Automated CLI Evaluation Logs
           </span>

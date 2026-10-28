@@ -182,3 +182,97 @@ class PostgresAdapter(DatabaseAdapter):
                     ]
         except Exception:
             return []
+
+    async def get_live_telemetry(self) -> dict[str, Any]:
+        """Collects live performance telemetry and resource saturation from catalog statistics."""
+        try:
+            async with await psycopg.AsyncConnection.connect(
+                self._get_connection_string(), connect_timeout=3
+            ) as aconn:
+                async with aconn.cursor() as cur:
+                    # 1. Buffer cache hit ratio and database activity from pg_stat_database
+                    await cur.execute(
+                        """
+                        SELECT
+                            COALESCE(sum(blks_hit) * 100.0 / NULLIF(sum(blks_hit + blks_read), 0), 100.0) AS buffer_hit_ratio,
+                            COALESCE(sum(numbackends), 0) AS active_backends,
+                            COALESCE(sum(xact_commit + xact_rollback), 0) AS xact_count
+                        FROM pg_stat_database
+                        WHERE datname = current_database();
+                        """
+                    )
+                    db_row = await cur.fetchone()
+                    buffer_hit_ratio = round(float(db_row[0]), 2) if db_row and db_row[0] is not None else None
+                    active_backends = int(db_row[1]) if db_row and db_row[1] is not None else None
+
+                    # 2. Connection saturation and lock waits from pg_stat_activity
+                    await cur.execute(
+                        """
+                        SELECT
+                            COUNT(*) FILTER (WHERE state = 'active' AND pid <> pg_backend_pid()) AS active_queries,
+                            COUNT(*) FILTER (WHERE wait_event_type = 'Lock' AND pid <> pg_backend_pid()) AS waiting_locks,
+                            COUNT(*) FILTER (WHERE pid <> pg_backend_pid()) AS total_client_backends
+                        FROM pg_stat_activity;
+                        """
+                    )
+                    act_row = await cur.fetchone()
+                    active_queries = int(act_row[0]) if act_row and act_row[0] is not None else 0
+                    waiting_locks = int(act_row[1]) if act_row and act_row[1] is not None else 0
+                    total_client_backends = int(act_row[2]) if act_row and act_row[2] is not None else (active_backends or 0)
+
+                    # 3. Check pg_stat_statements summary if available
+                    has_pg_stat = False
+                    pg_stat_calls = None
+                    pg_stat_total_time_ms = None
+                    pg_stat_avg_ms = None
+                    try:
+                        await cur.execute(
+                            "SELECT COALESCE(sum(calls), 0), COALESCE(sum(total_exec_time), 0.0) FROM pg_stat_statements;"
+                        )
+                        stat_row = await cur.fetchone()
+                        if stat_row:
+                            has_pg_stat = True
+                            pg_stat_calls = int(stat_row[0])
+                            pg_stat_total_time_ms = round(float(stat_row[1]), 2)
+                            if pg_stat_calls > 0:
+                                pg_stat_avg_ms = round(pg_stat_total_time_ms / pg_stat_calls, 2)
+                    except Exception:
+                        has_pg_stat = False
+
+                    # Check max_connections
+                    await cur.execute("SHOW max_connections;")
+                    max_conn_row = await cur.fetchone()
+                    max_connections = int(max_conn_row[0]) if max_conn_row else 100
+
+                    return {
+                        "connected": True,
+                        "status": "ONLINE",
+                        "measurement_source": "POSTGRES_CATALOG",
+                        "buffer_cache_hit_ratio": buffer_hit_ratio,
+                        "active_backends": active_backends or total_client_backends,
+                        "max_connections": max_connections,
+                        "active_queries": active_queries,
+                        "waiting_locks": waiting_locks,
+                        "has_pg_stat_statements": has_pg_stat,
+                        "cumulative_calls": pg_stat_calls,
+                        "cumulative_exec_time_ms": pg_stat_total_time_ms,
+                        "overall_avg_latency_ms": pg_stat_avg_ms,
+                        "is_simulated": False,
+                    }
+        except Exception as e:
+            return {
+                "connected": False,
+                "status": "OFFLINE",
+                "measurement_source": "UNAVAILABLE",
+                "error": str(e),
+                "buffer_cache_hit_ratio": None,
+                "active_backends": None,
+                "max_connections": None,
+                "active_queries": None,
+                "waiting_locks": None,
+                "has_pg_stat_statements": False,
+                "cumulative_calls": None,
+                "cumulative_exec_time_ms": None,
+                "overall_avg_latency_ms": None,
+                "is_simulated": False,
+            }

@@ -132,7 +132,7 @@ async def test_complete_product_workflow():
         # STEP 7: Generate Overload Protection & Pool Sizing (Protect)
         protect_payload = {
             "arrival_qps": 1200.0,
-            "mean_latency_ms": cand_completed["summary_metrics"]["latency_p95_ms"],
+            "mean_latency_ms": cand_completed["summary_metrics"]["latency_p95_ms"] or 15.0,
             "cpu_cores": 8,
             "disk_type": "ssd",
             "max_client_connections": 1500,

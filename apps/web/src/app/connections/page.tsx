@@ -14,6 +14,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 import { Badge } from "../../components/ui/Badge";
 
 interface ConnectionItem {
@@ -27,58 +28,63 @@ interface ConnectionItem {
   operational_tier?: string;
   tier?: string;
   is_disposable_sandbox?: boolean;
+  is_simulated?: boolean;
   capabilities?: {
     connected?: boolean;
     server_version?: string;
+    has_pg_stat_statements?: boolean;
     pg_stat_statements_installed?: boolean;
-    pg_stat_kcache_installed?: boolean;
+    has_hypopg?: boolean;
     error?: string;
   };
   probe_status?: "idle" | "probing" | "success" | "failed";
   probe_message?: string;
 }
 
-const DEFAULT_DEMO_CONNECTIONS: ConnectionItem[] = [
+const SAMPLE_DEMO_CONNECTIONS: ConnectionItem[] = [
   {
-    id: "conn-prod-replica",
-    name: "Production Main Read Replica (Demo Profile)",
+    id: "conn-demo-read-replica",
+    name: "Production Read Replica (Simulated Demo Profile)",
     host: "pg-read.internal",
     port: 5432,
     database_name: "prod_app",
     username: "trafiora_monitor",
     operational_tier: "tier_1_read_only",
     is_disposable_sandbox: false,
+    is_simulated: true,
     capabilities: {
       connected: false,
       server_version: "PostgreSQL 18.6 (Simulated)",
-      pg_stat_statements_installed: true,
-      error: "Host unreachable: pg-read.internal (Demo profile)",
+      has_pg_stat_statements: true,
+      error: "Host unreachable (Simulated Profile - Not connected to live target)",
     },
     probe_status: "failed",
-    probe_message: "Host unreachable: pg-read.internal (Demo profile)",
+    probe_message: "Simulated Profile (Not a live verified database target)",
   },
   {
-    id: "conn-staging-bench",
-    name: "Staging Performance Test Target (Demo Profile)",
+    id: "conn-demo-staging-bench",
+    name: "Staging Perf Test Target (Simulated Demo Profile)",
     host: "127.0.0.1",
     port: 5432,
     database_name: "trafiora_test",
     username: "trafiora_bench",
     operational_tier: "tier_2_workload_benchmark",
     is_disposable_sandbox: true,
+    is_simulated: true,
     capabilities: {
       connected: false,
-      server_version: "PostgreSQL 18.6",
-      pg_stat_statements_installed: true,
-      error: "Port 5432 closed: no local PostgreSQL daemon listening",
+      server_version: "PostgreSQL 18.6 (Simulated)",
+      has_pg_stat_statements: true,
+      error: "Target not connected (Simulated Profile)",
     },
     probe_status: "failed",
-    probe_message: "Connection refused: 127.0.0.1:5432",
+    probe_message: "Simulated Profile (Not a live verified database target)",
   },
 ];
 
 export default function ConnectionsPage() {
-  const [connections, setConnections] = useState<ConnectionItem[]>(DEFAULT_DEMO_CONNECTIONS);
+  const [connections, setConnections] = useState<ConnectionItem[]>([]);
+  const [showDemoProfiles, setShowDemoProfiles] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -97,17 +103,12 @@ export default function ConnectionsPage() {
   const fetchConnections = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("http://127.0.0.1:8000/api/v1/connections");
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setConnections(data);
-        } else {
-          setConnections(DEFAULT_DEMO_CONNECTIONS);
-        }
+      const data = await apiClient.get<ConnectionItem[]>("/connections");
+      if (Array.isArray(data)) {
+        setConnections(data);
       }
     } catch {
-      // Keep demo list on API network issue
+      // Retain existing state on fetch error
     } finally {
       setIsLoading(false);
     }
@@ -125,47 +126,29 @@ export default function ConnectionsPage() {
     );
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/connections/${connId}/probe`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        const caps = await res.json();
-        setConnections((prev) =>
-          prev.map((c) =>
-            c.id === connId
-              ? {
-                  ...c,
-                  capabilities: caps,
-                  probe_status: caps.connected ? "success" : "failed",
-                  probe_message: caps.connected
-                    ? `Connected (${caps.server_version || "PostgreSQL"})`
-                    : (caps.error || "Connection failed / offline"),
-                }
-              : c
-          )
-        );
-      } else {
-        const err = await res.json().catch(() => ({ detail: "Probe request failed" }));
-        setConnections((prev) =>
-          prev.map((c) =>
-            c.id === connId
-              ? {
-                  ...c,
-                  probe_status: "failed",
-                  probe_message: err.detail || "Probe returned error status",
-                }
-              : c
-          )
-        );
-      }
-    } catch {
+      const caps = await apiClient.post<any>(`/connections/${connId}/probe`);
+      setConnections((prev) =>
+        prev.map((c) =>
+          c.id === connId
+            ? {
+                ...c,
+                capabilities: caps,
+                probe_status: caps.connected ? "success" : "failed",
+                probe_message: caps.connected
+                  ? `Connected: ${caps.server_version} | pg_stat_statements: ${caps.has_pg_stat_statements ? "Yes" : "No"}`
+                  : `Offline: ${caps.error || "Host unreachable"}`,
+              }
+            : c
+        )
+      );
+    } catch (err: any) {
       setConnections((prev) =>
         prev.map((c) =>
           c.id === connId
             ? {
                 ...c,
                 probe_status: "failed",
-                probe_message: "Target host is unreachable / offline",
+                probe_message: err.message || "Connection probe failed",
               }
             : c
         )
@@ -179,27 +162,18 @@ export default function ConnectionsPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/connections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim() || `${host}:${port}/${databaseName}`,
-          engine: "postgresql",
-          host: host.trim(),
-          port: Number(port),
-          database_name: databaseName.trim(),
-          username: username.trim(),
-          password: password,
-          ssl_mode: "prefer",
-          operational_tier: tier,
-          is_disposable_sandbox: isSandbox,
-        }),
+      await apiClient.post("/connections", {
+        name: name.trim() || `${host}:${port}/${databaseName}`,
+        engine: "postgresql",
+        host: host.trim(),
+        port: Number(port),
+        database_name: databaseName.trim(),
+        username: username.trim(),
+        password: password,
+        ssl_mode: "prefer",
+        operational_tier: tier,
+        is_disposable_sandbox: isSandbox,
       });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Failed to create connection" }));
-        throw new Error(err.detail || "Connection creation failed");
-      }
 
       setShowAddModal(false);
       setName("");
@@ -263,6 +237,33 @@ export default function ConnectionsPage() {
         </div>
       </div>
 
+      {/* Empty State when no connections exist */}
+      {connections.length === 0 && !isLoading && (
+        <div className="panel p-8 text-center space-y-3 border-dashed border-graphite-600">
+          <Database className="w-8 h-8 text-graphite-400 mx-auto" />
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-graphite-100 font-mono">No Registered Database Targets</h3>
+            <p className="text-xs text-graphite-300 max-w-md mx-auto">
+              No live database connections are currently registered. Register an authorized PostgreSQL instance or view simulated demo profiles.
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-2 pt-2">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-3 py-1.5 rounded bg-brand-teal text-graphite-950 font-bold text-xs font-mono hover:bg-brand-tealLight transition-colors"
+            >
+              Add Connection
+            </button>
+            <button
+              onClick={() => setConnections(SAMPLE_DEMO_CONNECTIONS)}
+              className="px-3 py-1.5 rounded bg-graphite-800 border border-graphite-600 text-graphite-200 text-xs font-mono hover:bg-graphite-750 transition-colors"
+            >
+              Load Simulated Demo Profiles
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Connections List Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {connections.map((c) => {
@@ -277,18 +278,26 @@ export default function ConnectionsPage() {
                   <Database className="w-4 h-4 text-brand-teal" />
                   <span className="font-bold text-xs text-graphite-50 font-sans">{c.name}</span>
                 </div>
-                <Badge
-                  variant={
-                    tierVal === "tier_1_read_only"
-                      ? "tier1"
-                      : tierVal === "tier_2_workload_benchmark"
-                      ? "tier2"
-                      : "tier3"
-                  }
-                >
-                  {tierVal}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  {c.is_simulated && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-graphite-800 text-graphite-300 border border-graphite-600">
+                      SIMULATED
+                    </span>
+                  )}
+                  <Badge
+                    variant={
+                      tierVal === "tier_1_read_only"
+                        ? "tier1"
+                        : tierVal === "tier_2_workload_benchmark"
+                        ? "tier2"
+                        : "tier3"
+                    }
+                  >
+                    {tierVal}
+                  </Badge>
+                </div>
               </div>
+
 
               <div className="p-2.5 rounded bg-graphite-950 font-mono text-xs text-graphite-200 space-y-1 border border-graphite-600">
                 <div><span className="text-graphite-400">Host:</span> <strong className="text-graphite-100">{c.host}:{c.port}</strong></div>

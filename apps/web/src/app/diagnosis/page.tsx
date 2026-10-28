@@ -173,6 +173,7 @@ export default function DiagnosisPage() {
 
         <div className="flex items-center gap-2">
           <Badge variant="warning">3 Active Findings</Badge>
+          <Badge variant="simulated">SIMULATED DEMO RULES</Badge>
           <Badge variant="healthy">Heuristics Engine v2.2</Badge>
         </div>
       </div>

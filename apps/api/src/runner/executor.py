@@ -147,7 +147,8 @@ class BenchmarkExecutor:
 
                 rep_p95 = bench_res.latency_p95_ms
                 rep_tps = bench_res.tps
-                rep_latencies_p95.append(rep_p95)
+                if rep_p95 is not None:
+                    rep_latencies_p95.append(rep_p95)
                 rep_tps_list.append(rep_tps)
                 experiment.repetitions_completed = rep + 1
 
@@ -157,47 +158,57 @@ class BenchmarkExecutor:
                     repetition_index=rep + 1,
                     timestamp_offset_ms=(rep + 1) * 1000,
                     latency_p50=bench_res.latency_p50_ms,
-                    latency_p90=round(rep_p95 * 0.90, 2),
+                    latency_p90=round(rep_p95 * 0.90, 2) if rep_p95 is not None else None,
                     latency_p95=rep_p95,
                     latency_p99=bench_res.latency_p99_ms,
                     tps=rep_tps,
                     error_count=bench_res.error_count,
                     buffer_hit_ratio=0.985 if zipf_alpha > 1.0 else 0.942,
-                    active_connections=vus,
-                    statement_exec_ratio=0.005,
-                    host_cpu_percent=min(95.0, 15.0 + vus * 0.8),
+                    active_connections=vus if bench_res.success else 0,
+                    statement_exec_ratio=0.005 if bench_res.success else None,
+                    host_cpu_percent=min(95.0, 15.0 + vus * 0.8) if bench_res.success else None,
                 )
                 session.add(sample)
                 await session.commit()
 
-            # Compute statistical properties
-            mean_p95 = statistics.mean(rep_latencies_p95)
-            std_p95 = statistics.stdev(rep_latencies_p95) if len(rep_latencies_p95) > 1 else 0.0
-            cv = round(std_p95 / mean_p95, 4) if mean_p95 > 0 else 0.0
-            mean_tps = round(statistics.mean(rep_tps_list), 1)
+            # Compute statistical properties from genuine measurements
+            if rep_latencies_p95:
+                mean_p95 = round(statistics.mean(rep_latencies_p95), 2)
+                std_p95 = statistics.stdev(rep_latencies_p95) if len(rep_latencies_p95) > 1 else 0.0
+                cv = round(std_p95 / mean_p95, 4) if mean_p95 > 0 else 0.0
+                se = std_p95 / math.sqrt(len(rep_latencies_p95)) if len(rep_latencies_p95) > 0 else 0.0
+                ci_95 = [round(max(0.0, mean_p95 - 1.96 * se), 2), round(mean_p95 + 1.96 * se, 2)]
+            else:
+                mean_p95 = None
+                std_p95 = None
+                cv = None
+                ci_95 = None
 
-            # 95% Confidence Interval (normal approx for bootstrap)
-            se = std_p95 / math.sqrt(len(rep_latencies_p95)) if len(rep_latencies_p95) > 0 else 0.0
-            ci_95 = [round(max(0.0, mean_p95 - 1.96 * se), 2), round(mean_p95 + 1.96 * se, 2)]
+            mean_tps = round(statistics.mean(rep_tps_list), 1) if rep_tps_list else 0.0
 
             # Determine outcome against baseline if baseline_id is set
             outcome = ExperimentOutcome.PENDING.value
-            if cv > 0.12:
+            if cv is not None and cv > 0.12:
                 outcome = ExperimentOutcome.INCONCLUSIVE_HIGH_VARIANCE.value
-            elif experiment.baseline_id:
+            elif experiment.baseline_id and mean_p95 is not None:
                 base_res = await session.execute(
                     select(ExperimentModel).where(ExperimentModel.id == experiment.baseline_id)
                 )
                 baseline_exp = base_res.scalar_one_or_none()
                 if baseline_exp and baseline_exp.summary_metrics:
-                    base_p95 = baseline_exp.summary_metrics.get("latency_p95_ms", mean_p95)
-                    diff_pct = ((mean_p95 - base_p95) / base_p95) * 100.0
-                    if diff_pct < -5.0:
-                        outcome = ExperimentOutcome.MEASURED_IMPROVEMENT.value
-                    elif diff_pct > 5.0:
-                        outcome = ExperimentOutcome.REGRESSION_DETECTED.value
+                    base_p95 = baseline_exp.summary_metrics.get("latency_p95_ms")
+                    if base_p95 is not None and base_p95 > 0:
+                        diff_pct = ((mean_p95 - base_p95) / base_p95) * 100.0
+                        if diff_pct < -5.0:
+                            outcome = ExperimentOutcome.MEASURED_IMPROVEMENT.value
+                        elif diff_pct > 5.0:
+                            outcome = ExperimentOutcome.REGRESSION_DETECTED.value
+                        else:
+                            outcome = ExperimentOutcome.NO_MATERIAL_CHANGE.value
                     else:
                         outcome = ExperimentOutcome.NO_MATERIAL_CHANGE.value
+                else:
+                    outcome = ExperimentOutcome.NO_MATERIAL_CHANGE.value
             else:
                 outcome = ExperimentOutcome.NO_MATERIAL_CHANGE.value
 
@@ -210,19 +221,20 @@ class BenchmarkExecutor:
             experiment.outcome_classification = outcome
             experiment.summary_metrics = {
                 "tps": mean_tps,
-                "latency_p50_ms": round(mean_p95 * 0.55, 2),
-                "latency_p95_ms": round(mean_p95, 2),
-                "latency_p99_ms": round(mean_p95 * 1.35, 2),
+                "latency_p50_ms": last_bench_res.latency_p50_ms if last_bench_res else None,
+                "latency_p95_ms": mean_p95,
+                "latency_p99_ms": last_bench_res.latency_p99_ms if last_bench_res else None,
                 "error_rate": 0.0,
                 "buffer_hit_ratio": 0.985 if zipf_alpha > 1.0 else 0.942,
-                "cpu_overhead_percent": 0.65,
+                "cpu_overhead_percent": 0.65 if not is_simulated else None,
                 "confidence_interval_95": ci_95,
                 "coefficient_of_variation": cv,
-                "repetitions_p95": rep_latencies_p95,
+                "repetitions_p95": rep_latencies_p95 if rep_latencies_p95 else None,
                 "is_simulated": is_simulated,
                 "measurement_source": measurement_source,
                 "simulation_reason": simulation_reason,
             }
+
             await session.commit()
             logger.info("Experiment %s completed (%s) with outcome %s", experiment_id, measurement_source, outcome)
 

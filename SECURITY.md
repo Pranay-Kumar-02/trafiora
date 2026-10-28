@@ -6,7 +6,7 @@ Trafiora treats database credentials, query telemetry, and workload safety with 
 
 ## 1. Reporting Security Vulnerabilities
 If you discover a security vulnerability in Trafiora, please report it privately:
-- **Email:** `vonamala.pranay@gmail.com`
+- **Email:** `security@trafiora.io`
 - **Subject:** `[SECURITY] Trafiora Vulnerability Report`
 
 Please include:

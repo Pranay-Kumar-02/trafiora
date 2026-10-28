@@ -18,6 +18,7 @@ import {
 import { Badge } from "../../components/ui/Badge";
 import { SQLViewer } from "../../components/ui/SQLViewer";
 import { QueryPlanViewer, PlanNode } from "../../components/ui/QueryPlanViewer";
+import { apiClient } from "../../lib/api-client";
 
 interface QueryItem {
   fingerprint: string;
@@ -188,26 +189,21 @@ export default function WorkloadPage() {
   const handleNormalize = async () => {
     setIsNormalizing(true);
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/queries/normalize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ raw_sql: rawSqlInput }),
+      const data = await apiClient.post<any>("/queries/normalize", {
+        raw_sql: rawSqlInput,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setNormalizeResult(data);
-        const newItem: QueryItem = {
-          fingerprint: data.fingerprint.slice(0, 16),
-          statement_type: data.statement_type || "SELECT",
-          canonical_sql: data.canonical_sql,
-          tables: data.tables || ["users"],
-          calls: 1,
-          mean_latency_ms: 5.2,
-          total_time_pct: 4.8,
-          antipatterns: data.antipatterns || [],
-        };
-        setSelectedQuery(newItem);
-      }
+      setNormalizeResult(data);
+      const newItem: QueryItem = {
+        fingerprint: data.fingerprint.slice(0, 16),
+        statement_type: data.statement_type || "SELECT",
+        canonical_sql: data.canonical_sql,
+        tables: data.tables || ["users"],
+        calls: 1,
+        mean_latency_ms: 5.2,
+        total_time_pct: 4.8,
+        antipatterns: data.antipatterns || [],
+      };
+      setSelectedQuery(newItem);
     } catch {
       // Local fallback
       setNormalizeResult({

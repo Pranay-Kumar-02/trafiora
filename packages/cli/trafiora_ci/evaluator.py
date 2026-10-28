@@ -41,10 +41,18 @@ class RegressionEvaluator:
         if budget is None:
             budget = RegressionBudget()
 
-        base_p95 = float(baseline_metrics.get("latency_p95_ms", 1.0))
-        cand_p95 = float(candidate_metrics.get("latency_p95_ms", 1.0))
-        p95_diff_pct = round(((cand_p95 - base_p95) / max(0.001, base_p95)) * 100.0, 2)
-        p95_passed = p95_diff_pct <= budget.max_p95_latency_increase_pct
+        base_p95_raw = baseline_metrics.get("latency_p95_ms")
+        cand_p95_raw = candidate_metrics.get("latency_p95_ms")
+        base_p95 = float(base_p95_raw) if base_p95_raw is not None else 0.0
+        cand_p95 = float(cand_p95_raw) if cand_p95_raw is not None else 0.0
+
+        p95_unavailable = base_p95_raw is None or cand_p95_raw is None
+        if p95_unavailable:
+            p95_diff_pct = 0.0
+            p95_passed = False
+        else:
+            p95_diff_pct = round(((cand_p95 - base_p95) / max(0.001, base_p95)) * 100.0, 2)
+            p95_passed = p95_diff_pct <= budget.max_p95_latency_increase_pct
 
         base_tps = float(baseline_metrics.get("tps", 1.0))
         cand_tps = float(candidate_metrics.get("tps", 1.0))
@@ -54,14 +62,17 @@ class RegressionEvaluator:
         cand_errors = float(candidate_metrics.get("error_rate", 0.0))
         errors_passed = cand_errors <= budget.max_error_rate
 
-        cand_cv = float(candidate_metrics.get("coefficient_of_variation", 0.0))
-        is_inconclusive = cand_cv > budget.max_variance_cv
+        cand_cv = float(candidate_metrics.get("coefficient_of_variation") or 0.0)
+        is_inconclusive = cand_cv > budget.max_variance_cv or p95_unavailable
 
         reasons = []
-        if not p95_passed:
+        if p95_unavailable:
+            reasons.append("Reliable p95 latency measurement is unavailable for evaluation")
+        elif not p95_passed:
             reasons.append(
                 f"Latency p95 increased by {p95_diff_pct:+.1f}% (limit: +{budget.max_p95_latency_increase_pct:.1f}%)"
             )
+
         if not tps_passed:
             reasons.append(
                 f"TPS throughput retention is {tps_retention_pct:.1f}% (minimum required: {budget.min_tps_retention_pct:.1f}%)"

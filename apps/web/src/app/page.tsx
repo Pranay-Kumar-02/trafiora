@@ -3,34 +3,110 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Activity,
   AlertTriangle,
   ArrowRight,
-  BarChart3,
-  CheckCircle2,
-  Clock,
-  Cpu,
   Database,
   ExternalLink,
-  Flame,
   GitCompare,
-  HardDrive,
-  Info,
   Layers,
   Play,
   RotateCw,
   Search,
-  Server,
   Shield,
-  TrendingDown,
-  TrendingUp,
   Zap,
 } from "lucide-react";
 import { Badge } from "../components/ui/Badge";
 import { MetricCard } from "../components/ui/MetricCard";
 import { TimeSeriesChart, DataPoint } from "../components/ui/TimeSeriesChart";
+import { apiClient } from "../lib/api-client";
 
-const TELEMETRY_SERIES: DataPoint[] = [
+interface ActiveTargetStatus {
+  has_connection: boolean;
+  connection?: {
+    id: string;
+    name: string;
+    host: string;
+    port: number;
+    database: string;
+    operational_tier: string;
+    status: string;
+  } | null;
+  telemetry?: {
+    connected: boolean;
+    status: string;
+    measurement_source: string;
+    buffer_cache_hit_ratio?: number | null;
+    active_backends?: number | null;
+    max_connections?: number | null;
+    active_queries?: number | null;
+    waiting_locks?: number | null;
+    has_pg_stat_statements: boolean;
+    cumulative_calls?: number | null;
+    cumulative_exec_time_ms?: number | null;
+    overall_avg_latency_ms?: number | null;
+    is_simulated: boolean;
+  };
+}
+
+interface LiveQuery {
+  query_id: string;
+  query: string;
+  calls: number;
+  total_exec_time_ms: number;
+  mean_exec_time_ms: number;
+  rows: number;
+  shared_blks_hit: number;
+  shared_blks_read: number;
+}
+
+interface WorkloadQuery {
+  fingerprint: string;
+  statement: string;
+  totalTimePct: number;
+  calls: number;
+  meanLatencyMs: number;
+  antiPattern?: string;
+  isSimulated?: boolean;
+}
+
+const SIMULATED_QUERIES: WorkloadQuery[] = [
+  {
+    fingerprint: "f7d98b12e3a4",
+    statement: "SELECT id, payload, created_at FROM events WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2",
+    totalTimePct: 41.2,
+    calls: 128450,
+    meanLatencyMs: 18.4,
+    antiPattern: "Missing composite index on (user_id, created_at)",
+    isSimulated: true,
+  },
+  {
+    fingerprint: "a310c89e4f21",
+    statement: "SELECT c.id, count(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id",
+    totalTimePct: 24.6,
+    calls: 4210,
+    meanLatencyMs: 84.2,
+    antiPattern: "HashAggregate on unbounded join",
+    isSimulated: true,
+  },
+  {
+    fingerprint: "8b72e11d09ca",
+    statement: "UPDATE accounts SET balance = balance + $1, updated_at = NOW() WHERE id = $2",
+    totalTimePct: 15.3,
+    calls: 89400,
+    meanLatencyMs: 3.2,
+    isSimulated: true,
+  },
+  {
+    fingerprint: "3e55f01a7d62",
+    statement: "SELECT * FROM sessions WHERE token = $1 AND expires_at > NOW()",
+    totalTimePct: 11.8,
+    calls: 210800,
+    meanLatencyMs: 1.1,
+    isSimulated: true,
+  },
+];
+
+const SIMULATED_TELEMETRY: DataPoint[] = [
   { time: "20:30:00", throughputQps: 1220.4, latencyP95Ms: 14.8, latencyP50Ms: 4.2 },
   { time: "20:32:00", throughputQps: 1340.1, latencyP95Ms: 12.1, latencyP50Ms: 3.9 },
   { time: "20:34:00", throughputQps: 1450.8, latencyP95Ms: 10.4, latencyP50Ms: 3.6 },
@@ -41,65 +117,125 @@ const TELEMETRY_SERIES: DataPoint[] = [
   { time: "20:44:00", throughputQps: 1490.6, latencyP95Ms: 8.6, latencyP50Ms: 3.1 },
 ];
 
-interface WorkloadQuery {
-  fingerprint: string;
-  statement: string;
-  totalTimePct: number;
-  calls: number;
-  meanLatencyMs: number;
-  antiPattern?: string;
-}
-
-const TOP_QUERIES: WorkloadQuery[] = [
-  {
-    fingerprint: "f7d98b12e3a4",
-    statement: "SELECT id, payload, created_at FROM events WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2",
-    totalTimePct: 41.2,
-    calls: 128450,
-    meanLatencyMs: 18.4,
-    antiPattern: "Missing composite index on (user_id, created_at)",
-  },
-  {
-    fingerprint: "a310c89e4f21",
-    statement: "SELECT c.id, count(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id",
-    totalTimePct: 24.6,
-    calls: 4210,
-    meanLatencyMs: 84.2,
-    antiPattern: "HashAggregate on unbounded join",
-  },
-  {
-    fingerprint: "8b72e11d09ca",
-    statement: "UPDATE accounts SET balance = balance + $1, updated_at = NOW() WHERE id = $2",
-    totalTimePct: 15.3,
-    calls: 89400,
-    meanLatencyMs: 3.2,
-  },
-  {
-    fingerprint: "3e55f01a7d62",
-    statement: "SELECT * FROM sessions WHERE token = $1 AND expires_at > NOW()",
-    totalTimePct: 11.8,
-    calls: 210800,
-    meanLatencyMs: 1.1,
-  },
-];
-
 export default function OverviewPage() {
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const [activeTarget, setActiveTarget] = useState<ActiveTargetStatus | null>(null);
+  const [liveQueries, setLiveQueries] = useState<LiveQuery[]>([]);
+  const [hasPgStatStatements, setHasPgStatStatements] = useState<boolean>(false);
+  const [experiments, setExperiments] = useState<any[]>([]);
   const [querySearch, setQuerySearch] = useState("");
-  const [selectedQuery, setSelectedQuery] = useState<WorkloadQuery | null>(TOP_QUERIES[0]);
+  const [selectedQuery, setSelectedQuery] = useState<WorkloadQuery | null>(null);
+  const [showSimulatedQueries, setShowSimulatedQueries] = useState(false);
+  const [showSimulatedChart, setShowSimulatedChart] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      // 1. Health check
+      const healthRes = await apiClient.get<{ status: string }>("/health").catch(() => null);
+      setApiOnline(healthRes?.status === "ok");
+
+      // 2. Active connection status & catalog telemetry
+      const targetRes = await apiClient
+        .get<ActiveTargetStatus>("/connections/active/status")
+        .catch(() => null);
+      setActiveTarget(targetRes);
+
+      // 3. If connected, fetch pg_stat_statements queries
+      if (targetRes?.has_connection && targetRes.connection?.id) {
+        const queryRes = await apiClient
+          .get<{
+            has_pg_stat_statements: boolean;
+            measurement_source: string;
+            is_simulated: boolean;
+            queries: LiveQuery[];
+          }>(`/connections/${targetRes.connection.id}/queries`)
+          .catch(() => null);
+
+        if (queryRes) {
+          setHasPgStatStatements(queryRes.has_pg_stat_statements);
+          setLiveQueries(queryRes.queries || []);
+        }
+      } else {
+        setLiveQueries([]);
+        setHasPgStatStatements(false);
+      }
+
+      // 4. Fetch real recent experiments
+      const expRes = await apiClient.get<any[]>("/experiments?limit=5").catch(() => []);
+      if (Array.isArray(expRes)) {
+        setExperiments(expRes);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/v1/health")
-      .then((res) => setApiOnline(res.ok))
-      .catch(() => setApiOnline(false));
+    fetchData();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  const filteredQueries = TOP_QUERIES.filter(
+  // Format queries for view
+  const totalExecTime = liveQueries.reduce((sum, q) => sum + (q.total_exec_time_ms || 0), 0) || 1;
+  const realFormattedQueries: WorkloadQuery[] = liveQueries.map((q) => ({
+    fingerprint: q.query_id.slice(0, 12),
+    statement: q.query,
+    totalTimePct: Math.round(((q.total_exec_time_ms || 0) / totalExecTime) * 1000) / 10,
+    calls: q.calls,
+    meanLatencyMs: Math.round((q.mean_exec_time_ms || 0) * 100) / 100,
+    antiPattern:
+      q.shared_blks_read > 500
+        ? `High Disk Read: ${q.shared_blks_read.toLocaleString()} blocks read from storage`
+        : undefined,
+    isSimulated: false,
+  }));
+
+  const activeQueriesList =
+    realFormattedQueries.length > 0
+      ? realFormattedQueries
+      : showSimulatedQueries
+      ? SIMULATED_QUERIES
+      : [];
+
+  const filteredQueries = activeQueriesList.filter(
     (q) =>
       q.statement.toLowerCase().includes(querySearch.toLowerCase()) ||
       q.fingerprint.toLowerCase().includes(querySearch.toLowerCase()) ||
       (q.antiPattern && q.antiPattern.toLowerCase().includes(querySearch.toLowerCase()))
   );
+
+  // Derive real experiment metric if available
+  const completedExperiments = experiments.filter((e) => e.status === "COMPLETED");
+  const latestCompleted = completedExperiments[0];
+  const baselineExp = completedExperiments.find((e) => e.is_baseline);
+  const candidateExp = completedExperiments.find((e) => !e.is_baseline && e.baseline_id);
+
+  // Time series data points from real completed experiments or empty
+  const realChartPoints: DataPoint[] = completedExperiments
+    .slice()
+    .reverse()
+    .map((e) => {
+      const p95 = e.summary_metrics?.mean_p95 ?? e.summary_metrics?.latency_p95_ms;
+      const p50 = e.summary_metrics?.latency_p50_ms;
+      const qps = e.summary_metrics?.throughput_qps_avg ?? 0;
+      const timeStr = e.completed_at
+        ? new Date(e.completed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : e.name.slice(0, 8);
+      return {
+        time: timeStr,
+        throughputQps: qps,
+        latencyP95Ms: p95 ?? 0,
+        latencyP50Ms: p50 ?? 0,
+      };
+    });
+
+  const chartData = realChartPoints.length > 0 ? realChartPoints : showSimulatedChart ? SIMULATED_TELEMETRY : [];
+
+  // Telemetry status
+  const isTargetOnline = activeTarget?.has_connection && activeTarget.telemetry?.status === "ONLINE";
+  const telemetry = activeTarget?.telemetry;
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
@@ -115,6 +251,17 @@ export default function OverviewPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setIsLoading(true);
+              fetchData();
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-500 text-xs font-mono text-graphite-100 transition-colors"
+            title="Refresh live telemetry from PostgreSQL catalog"
+          >
+            <RotateCw className={`w-3.5 h-3.5 text-brand-teal ${isLoading ? "animate-spin" : ""}`} />
+            <span>Refresh</span>
+          </button>
           <Link
             href="/canvas"
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-500 text-xs font-mono text-graphite-100 transition-colors"
@@ -135,10 +282,16 @@ export default function OverviewPage() {
       {/* System Health Strip */}
       <div className="panel p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
         <div className="flex items-center gap-2 border-r border-graphite-600/60 pr-2">
-          <span className={`w-2 h-2 rounded-full ${apiOnline ? "bg-status-success" : "bg-status-error"}`} />
+          <span
+            className={`w-2 h-2 rounded-full ${
+              apiOnline === null ? "bg-graphite-500" : apiOnline ? "bg-status-success" : "bg-status-error"
+            }`}
+          />
           <div className="flex flex-col">
             <span className="text-[10px] text-graphite-300">CONTROL PLANE</span>
-            <span className="text-graphite-50 font-semibold">{apiOnline ? "Active (Port 8000)" : "Offline"}</span>
+            <span className="text-graphite-50 font-semibold">
+              {apiOnline === null ? "Probing..." : apiOnline ? "Active (/api/v1)" : "Offline"}
+            </span>
           </div>
         </div>
 
@@ -146,7 +299,13 @@ export default function OverviewPage() {
           <Database className="w-4 h-4 text-brand-teal shrink-0" />
           <div className="flex flex-col">
             <span className="text-[10px] text-graphite-300">TARGET DB STATUS</span>
-            <span className="text-graphite-50 font-semibold">Offline (Sim Fallback)</span>
+            <span className="text-graphite-50 font-semibold">
+              {activeTarget?.has_connection
+                ? isTargetOnline
+                  ? `Online (${activeTarget.connection?.name})`
+                  : `Offline (${activeTarget.connection?.name})`
+                : "No Target Configured"}
+            </span>
           </div>
         </div>
 
@@ -154,65 +313,175 @@ export default function OverviewPage() {
           <Shield className="w-4 h-4 text-status-warning shrink-0" />
           <div className="flex flex-col">
             <span className="text-[10px] text-graphite-300">OPERATIONAL TIER</span>
-            <span className="text-status-warning font-semibold">Tier 2: Authorized Bench</span>
+            <span className="text-status-warning font-semibold truncate max-w-[140px]">
+              {activeTarget?.connection?.operational_tier
+                ? activeTarget.connection.operational_tier.replace(/_/g, " ").toUpperCase()
+                : "None Configured"}
+            </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-status-info shrink-0" />
           <div className="flex flex-col">
-            <span className="text-[10px] text-graphite-300">PROTECTION ENGINE</span>
-            <span className="text-graphite-50 font-semibold">Pool Limit: 35 conn</span>
+            <span className="text-[10px] text-graphite-300">PG_STAT_STATEMENTS</span>
+            <span className="text-graphite-50 font-semibold">
+              {isTargetOnline
+                ? hasPgStatStatements
+                  ? "Installed & Active"
+                  : "Not Installed"
+                : "Unavailable (Offline)"}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Primary KPI Metrics Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Metric 1: Throughput */}
         <MetricCard
           label="Query Throughput"
-          value="1,480.2"
-          unit="QPS"
-          delta={{ value: "+12.4% vs baseline", isPositiveGood: true, trend: "up" }}
-          source="pg_stat_statements"
-          isSimulated={true}
+          value={
+            latestCompleted?.summary_metrics?.throughput_qps_avg != null
+              ? latestCompleted.summary_metrics.throughput_qps_avg.toLocaleString(undefined, { maximumFractionDigits: 1 })
+              : telemetry?.cumulative_calls != null
+              ? telemetry.cumulative_calls.toLocaleString()
+              : "—"
+          }
+          unit={
+            latestCompleted?.summary_metrics?.throughput_qps_avg != null
+              ? "QPS"
+              : telemetry?.cumulative_calls != null
+              ? "calls"
+              : undefined
+          }
+          subtext={
+            latestCompleted?.summary_metrics?.throughput_qps_avg != null
+              ? `Benchmark: ${latestCompleted.name}`
+              : telemetry?.cumulative_calls != null
+              ? "Cumulative pg_stat_statements"
+              : "Unavailable (No Benchmark Executed)"
+          }
+          source={
+            latestCompleted?.summary_metrics?.throughput_qps_avg != null
+              ? "pgbench (Real Benchmark Run)"
+              : telemetry?.cumulative_calls != null
+              ? "pg_stat_statements"
+              : "UNAVAILABLE"
+          }
+          isSimulated={false}
         />
+
+        {/* Metric 2: Latency p95 */}
         <MetricCard
           label="Latency (p95)"
-          value="8.45"
-          unit="ms"
-          delta={{ value: "-22.1% improvement", isPositiveGood: true, trend: "down" }}
-          source="pg_stat_statements"
-          isSimulated={true}
+          value={
+            latestCompleted
+              ? latestCompleted.summary_metrics?.mean_p95 != null
+                ? (latestCompleted.summary_metrics.mean_p95 as number).toFixed(2)
+                : latestCompleted.summary_metrics?.latency_p95_ms != null
+                ? (latestCompleted.summary_metrics.latency_p95_ms as number).toFixed(2)
+                : "Unavailable"
+              : telemetry?.overall_avg_latency_ms != null
+              ? telemetry.overall_avg_latency_ms.toFixed(2)
+              : "—"
+          }
+          unit={
+            (latestCompleted && (latestCompleted.summary_metrics?.mean_p95 != null || latestCompleted.summary_metrics?.latency_p95_ms != null)) ||
+            telemetry?.overall_avg_latency_ms != null
+              ? "ms"
+              : undefined
+          }
+          subtext={
+            latestCompleted
+              ? latestCompleted.summary_metrics?.mean_p95 != null
+                ? `Measured across ${latestCompleted.summary_metrics.repetitions_completed || 1} reps`
+                : latestCompleted.summary_metrics?.latency_p95_ms != null
+                ? "Measured from transaction logs"
+                : "Transaction log unrecorded"
+              : telemetry?.overall_avg_latency_ms != null
+              ? "Average latency (all statements)"
+              : "Unavailable (No Benchmark Run)"
+          }
+          source={
+            latestCompleted?.summary_metrics?.mean_p95 != null || latestCompleted?.summary_metrics?.latency_p95_ms != null
+              ? "pgbench -l transaction log"
+              : telemetry?.overall_avg_latency_ms != null
+              ? "pg_stat_statements"
+              : "UNAVAILABLE"
+          }
+          isSimulated={false}
         />
+
+        {/* Metric 3: Buffer Cache Hit Ratio */}
         <MetricCard
           label="Buffer Cache Hit Ratio"
-          value="99.2"
-          unit="%"
-          delta={{ value: "Stable (> 99%)", trend: "flat" }}
-          source="pg_statio_user_tables"
-          isSimulated={true}
+          value={
+            telemetry?.buffer_cache_hit_ratio != null
+              ? telemetry.buffer_cache_hit_ratio.toFixed(1)
+              : "—"
+          }
+          unit={telemetry?.buffer_cache_hit_ratio != null ? "%" : undefined}
+          subtext={
+            isTargetOnline
+              ? telemetry?.buffer_cache_hit_ratio != null && telemetry.buffer_cache_hit_ratio >= 99
+                ? "Optimal (> 99%)"
+                : "Live Catalog Measurement"
+              : "Target DB Disconnected"
+          }
+          source={isTargetOnline ? "pg_stat_database" : "POSTGRES_CATALOG (OFFLINE)"}
+          isSimulated={false}
         />
+
+        {/* Metric 4: Active Database Backends */}
         <MetricCard
           label="Active Database Backends"
-          value="28 / 35"
-          unit="conn"
-          delta={{ value: "80% of pool limit", trend: "up" }}
-          source="pg_stat_activity"
-          isSimulated={true}
+          value={
+            telemetry?.active_backends != null
+              ? `${telemetry.active_backends} / ${telemetry.max_connections || 100}`
+              : "—"
+          }
+          unit={telemetry?.active_backends != null ? "conn" : undefined}
+          subtext={
+            isTargetOnline
+              ? `${telemetry?.active_queries || 0} active queries, ${telemetry?.waiting_locks || 0} lock waits`
+              : "Target DB Disconnected"
+          }
+          source={isTargetOnline ? "pg_stat_activity" : "POSTGRES_CATALOG (OFFLINE)"}
+          isSimulated={false}
         />
       </div>
 
       {/* Main Performance Chart & Saturation Context */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Primary Time-Series (2 cols) */}
-        <div className="lg:col-span-2 space-y-3">
+        <div className="lg:col-span-2 space-y-2">
           <TimeSeriesChart
-            data={TELEMETRY_SERIES}
-            title="Workload Execution Telemetry (Throughput & Latency)"
-            source="pg_stat_statements (2m intervals)"
-            isSimulated={true}
+            data={chartData}
+            title={
+              realChartPoints.length > 0
+                ? "Benchmark Execution Telemetry (Throughput & Latency)"
+                : "Workload Execution Telemetry"
+            }
+            source={
+              realChartPoints.length > 0
+                ? "Trafiora Benchmark Runs (Genuine Measurements)"
+                : showSimulatedChart
+                ? "Simulated Demo Profile"
+                : "UNAVAILABLE (No Runs)"
+            }
+            isSimulated={realChartPoints.length === 0 && showSimulatedChart}
           />
+          {realChartPoints.length === 0 && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowSimulatedChart(!showSimulatedChart)}
+                className="text-[11px] font-mono text-graphite-300 hover:text-brand-teal transition-colors underline"
+              >
+                {showSimulatedChart ? "Hide Demo Trace" : "Preview Simulated Demo Trace"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right: Resource Saturation Context (1 col) */}
@@ -221,7 +490,9 @@ export default function OverviewPage() {
             <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
               Resource Saturation & Limits
             </h3>
-            <span className="text-[10px] font-mono text-graphite-300">Live Guards</span>
+            <span className="text-[10px] font-mono text-graphite-300">
+              {isTargetOnline ? "Live Catalog" : "Unavailable"}
+            </span>
           </div>
 
           <div className="space-y-3 text-xs font-mono">
@@ -229,18 +500,37 @@ export default function OverviewPage() {
             <div className="space-y-1">
               <div className="flex justify-between text-graphite-200">
                 <span>Active Server Connections:</span>
-                <span className="text-graphite-50 font-bold tabular-nums">28 / 35 (80%)</span>
+                <span className="text-graphite-50 font-bold tabular-nums">
+                  {telemetry?.active_backends != null
+                    ? `${telemetry.active_backends} / ${telemetry.max_connections || 100} (${Math.round(
+                        (telemetry.active_backends / (telemetry.max_connections || 100)) * 100
+                      )}%)`
+                    : "Unavailable (Offline)"}
+                </span>
               </div>
               <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-brand-teal h-full rounded-full" style={{ width: "80%" }} />
+                <div
+                  className="bg-brand-teal h-full rounded-full transition-all"
+                  style={{
+                    width:
+                      telemetry?.active_backends != null
+                        ? `${Math.min(
+                            100,
+                            Math.round((telemetry.active_backends / (telemetry.max_connections || 100)) * 100)
+                          )}%`
+                        : "0%",
+                  }}
+                />
               </div>
             </div>
 
-            {/* PgBouncer Wait Queue */}
+            {/* PgBouncer / Connection Pool */}
             <div className="space-y-1">
               <div className="flex justify-between text-graphite-200">
                 <span>PgBouncer Client Queue Wait:</span>
-                <span className="text-status-success font-bold tabular-nums">0 clients</span>
+                <span className="text-graphite-300 font-bold tabular-nums">
+                  {isTargetOnline ? "0 clients" : "Unavailable"}
+                </span>
               </div>
               <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
                 <div className="bg-status-success h-full rounded-full" style={{ width: "0%" }} />
@@ -251,21 +541,12 @@ export default function OverviewPage() {
             <div className="space-y-1">
               <div className="flex justify-between text-graphite-200">
                 <span>Database Host CPU Usage:</span>
-                <span className="text-graphite-50 font-bold tabular-nums">18.4% (8 Cores)</span>
+                <span className="text-graphite-300 font-bold tabular-nums">
+                  Unavailable (Requires host cgroups v2)
+                </span>
               </div>
               <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-brand-teal h-full rounded-full" style={{ width: "18.4%" }} />
-              </div>
-            </div>
-
-            {/* Monitoring Overhead */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-graphite-200">
-                <span>Trafiora CPU Overhead:</span>
-                <span className="text-brand-teal font-bold tabular-nums">0.58% (&lt; 1% Budget)</span>
-              </div>
-              <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-brand-teal h-full rounded-full" style={{ width: "29%" }} />
+                <div className="bg-graphite-700 h-full rounded-full" style={{ width: "0%" }} />
               </div>
             </div>
 
@@ -273,7 +554,13 @@ export default function OverviewPage() {
             <div className="space-y-1">
               <div className="flex justify-between text-graphite-200">
                 <span>Transaction Lock Waits:</span>
-                <span className="text-status-success font-bold tabular-nums">0 waiting</span>
+                <span
+                  className={`font-bold tabular-nums ${
+                    (telemetry?.waiting_locks || 0) > 0 ? "text-status-warning" : "text-status-success"
+                  }`}
+                >
+                  {telemetry?.waiting_locks != null ? `${telemetry.waiting_locks} waiting` : "Unavailable"}
+                </span>
               </div>
             </div>
           </div>
@@ -281,7 +568,11 @@ export default function OverviewPage() {
           <div className="p-2.5 rounded bg-graphite-850 border border-graphite-600 text-[11px] text-graphite-200 space-y-1">
             <span className="font-semibold text-graphite-50 block font-mono">Overload Circuit Breaker:</span>
             <p className="leading-relaxed">
-              Max client queue wait is set to 5.0s. If queue depth exceeds 15 clients, adaptive backpressure sheds incoming reads.
+              Target operational tier:{" "}
+              <strong className="text-graphite-100 font-mono">
+                {activeTarget?.connection?.operational_tier || "UNCONFIGURED"}
+              </strong>
+              . Safe observation and execution boundaries are strictly enforced.
             </p>
           </div>
         </div>
@@ -291,11 +582,28 @@ export default function OverviewPage() {
       <div className="panel p-4 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-graphite-600 pb-3">
           <div>
-            <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
-              Top Workload Execution Impact Queries
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+                Top Workload Execution Impact Queries
+              </h3>
+              {realFormattedQueries.length > 0 ? (
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-brand-teal/20 text-brand-teal border border-brand-teal/40">
+                  LIVE PG_STAT_STATEMENTS
+                </span>
+              ) : showSimulatedQueries ? (
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+                  SIMULATED DEMO PROFILE
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-graphite-800 text-graphite-400 border border-graphite-700">
+                  UNAVAILABLE
+                </span>
+              )}
+            </div>
             <span className="text-[11px] text-graphite-300">
-              Aggregated from pg_stat_statements by cumulative execution time.
+              {realFormattedQueries.length > 0
+                ? "Queried live from target database pg_stat_statements extension."
+                : "Shows queries sorted by cumulative execution time when target is active with pg_stat_statements."}
             </span>
           </div>
 
@@ -314,64 +622,105 @@ export default function OverviewPage() {
               href="/workload"
               className="text-xs font-mono text-brand-teal hover:underline flex items-center gap-1"
             >
-              <span>View All</span>
+              <span>Workload Explorer</span>
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
         </div>
 
-        {/* Queries Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono">
-            <thead>
-              <tr className="border-b border-graphite-600 text-[10px] text-graphite-300 uppercase">
-                <th className="py-2 px-3">Fingerprint</th>
-                <th className="py-2 px-3">Normalized Statement</th>
-                <th className="py-2 px-3 text-right">Exec Impact</th>
-                <th className="py-2 px-3 text-right">Calls</th>
-                <th className="py-2 px-3 text-right">Mean Latency</th>
-                <th className="py-2 px-3">Diagnostic Heuristic</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-graphite-600/60">
-              {filteredQueries.map((q) => (
-                <tr
-                  key={q.fingerprint}
-                  onClick={() => setSelectedQuery(q)}
-                  className={`cursor-pointer transition-colors ${
-                    selectedQuery?.fingerprint === q.fingerprint
-                      ? "bg-graphite-800 text-graphite-50"
-                      : "hover:bg-graphite-850/60 text-graphite-200"
-                  }`}
-                >
-                  <td className="py-2.5 px-3 text-brand-teal font-semibold">{q.fingerprint}</td>
-                  <td className="py-2.5 px-3 max-w-md truncate font-sans text-xs text-graphite-100">
-                    {q.statement}
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-bold tabular-nums text-graphite-50">
-                    {q.totalTimePct.toFixed(1)}%
-                  </td>
-                  <td className="py-2.5 px-3 text-right tabular-nums text-graphite-300">
-                    {q.calls.toLocaleString()}
-                  </td>
-                  <td className="py-2.5 px-3 text-right tabular-nums text-graphite-100">
-                    {q.meanLatencyMs.toFixed(1)} ms
-                  </td>
-                  <td className="py-2.5 px-3">
-                    {q.antiPattern ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-status-warningSurface text-status-warning border border-status-warningBorder">
-                        <AlertTriangle className="w-2.5 h-2.5" />
-                        <span className="truncate max-w-[200px]">{q.antiPattern}</span>
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-graphite-400">Optimal Index Scan</span>
-                    )}
-                  </td>
+        {/* Empty State when no real queries and not showing demo */}
+        {activeQueriesList.length === 0 ? (
+          <div className="p-8 text-center space-y-2 border border-graphite-700/60 rounded bg-graphite-900/40">
+            <Database className="w-8 h-8 text-graphite-400 mx-auto" />
+            <div className="text-xs font-mono text-graphite-200 font-semibold">
+              {activeTarget?.has_connection
+                ? isTargetOnline
+                  ? hasPgStatStatements
+                    ? "No query statistics recorded yet in pg_stat_statements."
+                    : "pg_stat_statements extension is not installed or enabled on the target database."
+                  : "PostgreSQL target is currently offline or unreachable."
+                : "No database target connection configured."}
+            </div>
+            <p className="text-xs text-graphite-300 max-w-md mx-auto">
+              {activeTarget?.has_connection
+                ? "Run a benchmark or execute database transactions to populate live query telemetry."
+                : "Register and connect a PostgreSQL target in the Connections view to inspect queries."}
+            </p>
+            <div className="pt-2 flex items-center justify-center gap-3">
+              <Link
+                href="/connections"
+                className="px-3 py-1 bg-graphite-800 hover:bg-graphite-750 border border-graphite-600 rounded text-xs font-mono text-graphite-100"
+              >
+                Manage Connections
+              </Link>
+              <button
+                onClick={() => setShowSimulatedQueries(true)}
+                className="px-3 py-1 bg-graphite-800 hover:bg-graphite-750 border border-graphite-600 rounded text-xs font-mono text-brand-teal"
+              >
+                Preview Simulated Demo Queries
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-graphite-600 text-[10px] text-graphite-300 uppercase">
+                  <th className="py-2 px-3">Fingerprint</th>
+                  <th className="py-2 px-3">Normalized Statement</th>
+                  <th className="py-2 px-3 text-right">Exec Impact</th>
+                  <th className="py-2 px-3 text-right">Calls</th>
+                  <th className="py-2 px-3 text-right">Mean Latency</th>
+                  <th className="py-2 px-3">Diagnostic Heuristic</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-graphite-600/60">
+                {filteredQueries.map((q) => (
+                  <tr
+                    key={q.fingerprint}
+                    onClick={() => setSelectedQuery(q)}
+                    className={`cursor-pointer transition-colors ${
+                      selectedQuery?.fingerprint === q.fingerprint
+                        ? "bg-graphite-800 text-graphite-50"
+                        : "hover:bg-graphite-850/60 text-graphite-200"
+                    }`}
+                  >
+                    <td className="py-2.5 px-3 text-brand-teal font-semibold flex items-center gap-1.5">
+                      <span>{q.fingerprint}</span>
+                      {q.isSimulated && (
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+                          SIM
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 max-w-md truncate font-sans text-xs text-graphite-100">
+                      {q.statement}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-bold tabular-nums text-graphite-50">
+                      {q.totalTimePct.toFixed(1)}%
+                    </td>
+                    <td className="py-2.5 px-3 text-right tabular-nums text-graphite-300">
+                      {q.calls.toLocaleString()}
+                    </td>
+                    <td className="py-2.5 px-3 text-right tabular-nums text-graphite-100">
+                      {q.meanLatencyMs.toFixed(1)} ms
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {q.antiPattern ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-status-warningSurface text-status-warning border border-status-warningBorder">
+                          <AlertTriangle className="w-2.5 h-2.5" />
+                          <span className="truncate max-w-[200px]">{q.antiPattern}</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-graphite-400">Normal Scan</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Bottom Grid: Latest Experiment Comparison & Actionable Bottlenecks */}
@@ -382,37 +731,104 @@ export default function OverviewPage() {
             <div className="flex items-center gap-2">
               <GitCompare className="w-4 h-4 text-brand-teal" />
               <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
-                Latest Verified Benchmark Comparison
+                Latest Benchmark Comparison
               </h3>
             </div>
-            <Badge variant="healthy">IMPROVEMENT VERIFIED</Badge>
+            {candidateExp ? (
+              <Badge
+                variant={
+                  candidateExp.outcome_classification === "MEASURED_IMPROVEMENT"
+                    ? "healthy"
+                    : candidateExp.outcome_classification === "REGRESSION_DETECTED"
+                    ? "critical"
+                    : "warning"
+                }
+              >
+                {candidateExp.outcome_classification || "PENDING"}
+              </Badge>
+            ) : (
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+                SIMULATED REFERENCE
+              </span>
+            )}
           </div>
 
-          <div className="p-3 rounded bg-graphite-850 border border-graphite-600 space-y-2 text-xs font-mono">
-            <div className="flex justify-between text-graphite-300 text-[11px]">
-              <span>Scenario: <strong className="text-graphite-100">Hot-Record Read Spikes (Zipfian)</strong></span>
-              <span>Target: <strong className="text-graphite-100">Tier 2 Authorized</strong></span>
-            </div>
+          {candidateExp && baselineExp ? (
+            <div className="p-3 rounded bg-graphite-850 border border-graphite-600 space-y-2 text-xs font-mono">
+              <div className="flex justify-between text-graphite-300 text-[11px]">
+                <span>
+                  Candidate: <strong className="text-graphite-100">{candidateExp.name}</strong>
+                </span>
+                <span>
+                  Baseline: <strong className="text-graphite-100">{baselineExp.name}</strong>
+                </span>
+              </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-graphite-600/60">
-              <div>
-                <span className="text-[10px] text-graphite-300 block">BASELINE p95</span>
-                <span className="text-sm font-bold text-graphite-100 tabular-nums">18.45 ms</span>
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-graphite-600/60">
+                <div>
+                  <span className="text-[10px] text-graphite-300 block">BASELINE p95</span>
+                  <span className="text-sm font-bold text-graphite-100 tabular-nums">
+                    {baselineExp.summary_metrics?.mean_p95 != null
+                      ? `${(baselineExp.summary_metrics.mean_p95 as number).toFixed(2)} ms`
+                      : baselineExp.summary_metrics?.latency_p95_ms != null
+                      ? `${(baselineExp.summary_metrics.latency_p95_ms as number).toFixed(2)} ms`
+                      : "Unavailable"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-graphite-300 block">CANDIDATE p95</span>
+                  <span className="text-sm font-bold text-brand-teal tabular-nums">
+                    {candidateExp.summary_metrics?.mean_p95 != null
+                      ? `${(candidateExp.summary_metrics.mean_p95 as number).toFixed(2)} ms`
+                      : candidateExp.summary_metrics?.latency_p95_ms != null
+                      ? `${(candidateExp.summary_metrics.latency_p95_ms as number).toFixed(2)} ms`
+                      : "Unavailable"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-graphite-300 block">STATUS</span>
+                  <span className="text-xs font-bold text-graphite-100">
+                    {candidateExp.outcome_classification}
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] text-graphite-300 block">CANDIDATE p95</span>
-                <span className="text-sm font-bold text-brand-teal tabular-nums">12.10 ms</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-graphite-300 block">LATENCY DELTA</span>
-                <span className="text-sm font-bold text-status-success tabular-nums">-34.4%</span>
-              </div>
-            </div>
 
-            <p className="text-[11px] text-graphite-200 font-sans pt-1">
-              Statistically significant improvement (p &lt; 0.001, Welch&apos;s t-test, N=2,500 transactions). Candidate composite index reduced shared buffer read blocks by 68%.
-            </p>
-          </div>
+              <p className="text-[11px] text-graphite-200 font-sans pt-1">
+                Completed {candidateExp.repetitions_completed} repetitions. Target:{" "}
+                {activeTarget?.connection?.name || "PostgreSQL Target"}.
+              </p>
+            </div>
+          ) : (
+            <div className="p-3 rounded bg-graphite-850 border border-graphite-600 space-y-2 text-xs font-mono">
+              <div className="flex justify-between text-graphite-300 text-[11px]">
+                <span>
+                  Scenario: <strong className="text-graphite-100">Hot-Record Read Spikes [SIMULATED]</strong>
+                </span>
+                <span>
+                  Target: <strong className="text-graphite-100">Reference Benchmark Model</strong>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-graphite-600/60">
+                <div>
+                  <span className="text-[10px] text-graphite-300 block">BASELINE p95</span>
+                  <span className="text-sm font-bold text-graphite-100 tabular-nums">18.45 ms</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-graphite-300 block">CANDIDATE p95</span>
+                  <span className="text-sm font-bold text-brand-teal tabular-nums">12.10 ms</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-graphite-300 block">LATENCY DELTA</span>
+                  <span className="text-sm font-bold text-status-success tabular-nums">-34.4%</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-graphite-300 font-sans pt-1 italic">
+                Reference demonstration baseline. Launch a candidate benchmark against a registered target to produce real comparative distributions.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end">
             <Link
@@ -434,7 +850,9 @@ export default function OverviewPage() {
                 Active Bottleneck Diagnosis
               </h3>
             </div>
-            <span className="text-[10px] font-mono text-graphite-300">1 High &bull; 1 Medium</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+              SIMULATED HEURISTIC
+            </span>
           </div>
 
           <div className="space-y-2 text-xs">

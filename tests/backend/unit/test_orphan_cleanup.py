@@ -18,7 +18,7 @@ def test_pgbench_script_generation():
 
 
 def test_pgbench_output_parsing():
-    """Verify parsing of real pgbench stdout output."""
+    """Verify parsing of real pgbench stdout output returns None for p95 when no transaction logs are present."""
     sample_stdout = """
 starting vacuum...end.
 transaction type: custom script
@@ -40,13 +40,32 @@ tps = 2548.192831 (without initial connection time)
     assert res.success is True
     assert res.tps == 2548.2
     assert res.latency_avg_ms == 7.84
-    assert res.latency_p95_ms == 12.55
+    # Must never estimate latency_avg * 1.6; when transaction data is missing, p95 must be None
+    assert res.latency_p95_ms is None
     assert res.error_count == 0
+
+
+def test_pgbench_output_parsing_with_transaction_logs(tmp_path):
+    """Verify parsing of genuine pgbench transaction logs produces verified percentiles."""
+    sample_stdout = "tps = 100.0\nlatency average = 5.0 ms"
+    log_file = tmp_path / "pgbench_log.1234"
+    # Write sample transaction records: client_id tx_no time_in_us
+    # 100 transactions from 1ms (1000us) to 100ms (100000us)
+    log_content = "\n".join([f"0 {i} {i * 1000} 0 0 0" for i in range(1, 101)])
+    log_file.write_text(log_content)
+
+    runner = PgBenchRunner()
+    res = runner.parse_pgbench_output(sample_stdout, log_dir=str(tmp_path))
+    assert res.success is True
+    assert res.tps == 100.0
+    assert res.latency_p50_ms == 51.0
+    assert res.latency_p95_ms == 96.0
+    assert res.latency_p99_ms == 100.0
 
 
 @pytest.mark.asyncio
 async def test_pgbench_fallback_when_binary_missing():
-    """Verify that when pgbench binary is absent, graceful simulated fallback executes without failure."""
+    """Verify that when pgbench binary is absent, graceful simulated fallback executes with honest null p95."""
     runner = PgBenchRunner(pgbench_bin=None)
     assert not runner.is_available
     res = await runner.execute(
@@ -62,8 +81,10 @@ async def test_pgbench_fallback_when_binary_missing():
     )
     assert res.success is True
     assert res.is_simulated_fallback is True
-    assert res.tps > 0
-    assert res.latency_p95_ms > 0
+    assert res.is_simulated is True
+    # Reliable p95 cannot be computed when offline; must be None/unavailable
+    assert res.latency_p95_ms is None
+
 
 
 def test_orphan_session_cleanup_sql_isolation():

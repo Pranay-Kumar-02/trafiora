@@ -1,4 +1,5 @@
-"""Trafiora FastAPI Control Plane Application Entrypoint."""
+import asyncio
+import sys
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -6,9 +7,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .api.router import api_router
 from .core.config import settings
-
-
 from .core.database import init_db
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 
 
 @asynccontextmanager
