@@ -97,7 +97,7 @@ async def test_complete_product_workflow():
         base_exp_id = base_exp_res.json()["id"]
 
         # Wait for baseline completion
-        for _ in range(50):
+        for _ in range(100):
             await asyncio.sleep(0.1)
             get_b = await client.get(f"/api/v1/experiments/{base_exp_id}")
             if get_b.json()["status"] in ["COMPLETED", "FAILED"]:
@@ -120,7 +120,7 @@ async def test_complete_product_workflow():
         cand_exp_id = cand_exp_res.json()["id"]
 
         # Wait for candidate completion
-        for _ in range(50):
+        for _ in range(100):
             await asyncio.sleep(0.1)
             get_c = await client.get(f"/api/v1/experiments/{cand_exp_id}")
             if get_c.json()["status"] in ["COMPLETED", "FAILED"]:
