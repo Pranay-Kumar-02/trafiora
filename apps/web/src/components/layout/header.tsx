@@ -33,8 +33,9 @@ export function Header() {
   useEffect(() => {
     const checkState = async () => {
       try {
-        await apiClient.get("/health");
-        setApiOnline(true);
+        const healthRes = await apiClient.get<{ status: string; healthy?: boolean; ok?: boolean }>("/health");
+        const isHealthy = healthRes?.status === "healthy" || healthRes?.status === "ok" || healthRes?.healthy === true;
+        setApiOnline(isHealthy);
         const now = new Date();
         setFreshness(now.toLocaleTimeString());
 
