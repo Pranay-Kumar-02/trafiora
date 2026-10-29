@@ -84,14 +84,14 @@ client_idle_timeout = 120.0
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202630] pb-3">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
-            <ShieldAlert className="w-5 h-5 text-brand-teal" />
-            <span>OVERLOAD PROTECTION &amp; POOL SIZING ENGINE</span>
+          <h1 className="text-sm font-bold tracking-tight text-[#E8EAF0] flex items-center gap-2 font-mono uppercase">
+            <ShieldAlert className="w-4 h-4 text-[#4E9F8E]" />
+            <span>Overload Protection &amp; Little&apos;s Law Pool Sizing</span>
           </h1>
-          <p className="text-xs text-graphite-200 mt-0.5">
-            Calculate mathematically bounded connection pools via Little&apos;s Law and export production PgBouncer configs.
+          <p className="text-xs text-[#929AA6] mt-0.5 font-sans">
+            Calculate mathematically bounded connection pools via Little&apos;s Law and export production PgBouncer configurations.
           </p>
         </div>
 
@@ -102,13 +102,13 @@ client_idle_timeout = 120.0
       </div>
 
       {/* Production Safety Rule Callout */}
-      <div className="panel p-3.5 border-graphite-600 bg-graphite-850 flex items-start gap-3 text-xs text-graphite-200 font-mono">
-        <Shield className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
+      <div className="bg-[#0D1014] p-3.5 rounded border border-[#202630] flex items-start gap-3 text-xs text-[#929AA6] font-mono shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
+        <Shield className="w-4 h-4 text-[#FBBF24] shrink-0 mt-0.5" />
         <div className="space-y-0.5">
-          <span className="font-bold text-graphite-50 uppercase text-[11px] block">
+          <span className="font-bold text-[#E8EAF0] uppercase text-[11px] block">
             Zero Silent Production Changes Policy
           </span>
-          <p className="text-graphite-300 leading-relaxed text-[11px] font-sans">
+          <p className="text-[#929AA6] leading-relaxed text-[11px] font-sans">
             Trafiora never applies production connection pool changes automatically or silently. Generated configurations must be inspected, peer-reviewed, and rolled out via standard infrastructure-as-code automation.
           </p>
         </div>
@@ -117,10 +117,10 @@ client_idle_timeout = 120.0
       {/* Main Grid: Calculator Inputs (1 col) + Generated INI Artifact (2 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Column: Sizing Parameters Form (5 cols) */}
-        <div className="lg:col-span-5 panel p-4 space-y-4">
-          <div className="border-b border-graphite-600 pb-2">
-            <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-brand-teal" />
+        <div className="lg:col-span-5 bg-[#0D1014] border border-[#202630] rounded p-4 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.7)]">
+          <div className="border-b border-[#202630] pb-2">
+            <h2 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase flex items-center gap-1.5">
+              <Sliders className="w-3.5 h-3.5 text-[#4E9F8E]" />
               <span>Workload Arrival &amp; Hardware Inputs</span>
             </h2>
           </div>
@@ -128,9 +128,9 @@ client_idle_timeout = 120.0
           <div className="space-y-3.5 text-xs font-mono">
             {/* Peak Arrival QPS */}
             <div>
-              <div className="flex justify-between text-graphite-300 mb-1">
+              <div className="flex justify-between text-[#929AA6] mb-1">
                 <span>Peak Arrival Rate (&lambda;):</span>
-                <span className="font-bold text-brand-teal tabular-nums">{qps} QPS</span>
+                <span className="font-bold text-[#CBD5E1] tabular-nums">{qps} QPS</span>
               </div>
               <input
                 type="range"
@@ -139,15 +139,15 @@ client_idle_timeout = 120.0
                 step={50}
                 value={qps}
                 onChange={(e) => setQps(Number(e.target.value))}
-                className="w-full accent-brand-teal bg-graphite-950"
+                className="w-full accent-[#4E9F8E] bg-[#090B0E]"
               />
             </div>
 
             {/* Mean Duration (ms) */}
             <div>
-              <div className="flex justify-between text-graphite-300 mb-1">
+              <div className="flex justify-between text-[#929AA6] mb-1">
                 <span>Mean Query Duration (W):</span>
-                <span className="font-bold text-brand-teal tabular-nums">{latencyMs} ms</span>
+                <span className="font-bold text-[#CBD5E1] tabular-nums">{latencyMs} ms</span>
               </div>
               <input
                 type="range"
@@ -156,15 +156,15 @@ client_idle_timeout = 120.0
                 step={0.5}
                 value={latencyMs}
                 onChange={(e) => setLatencyMs(Number(e.target.value))}
-                className="w-full accent-brand-teal bg-graphite-950"
+                className="w-full accent-[#4E9F8E] bg-[#090B0E]"
               />
             </div>
 
             {/* CPU Cores */}
             <div>
-              <div className="flex justify-between text-graphite-300 mb-1">
+              <div className="flex justify-between text-[#929AA6] mb-1">
                 <span>Database Host CPU Cores:</span>
-                <span className="font-bold text-graphite-50 tabular-nums">{cores} Cores</span>
+                <span className="font-bold text-[#E8EAF0] tabular-nums">{cores} Cores</span>
               </div>
               <input
                 type="range"
@@ -173,17 +173,17 @@ client_idle_timeout = 120.0
                 step={2}
                 value={cores}
                 onChange={(e) => setCores(Number(e.target.value))}
-                className="w-full accent-brand-teal bg-graphite-950"
+                className="w-full accent-[#4E9F8E] bg-[#090B0E]"
               />
             </div>
 
             {/* Storage Subsystem */}
             <div>
-              <label className="text-graphite-300 block mb-1">Storage Subsystem Type</label>
+              <label className="text-[#929AA6] block mb-1">Storage Subsystem Type</label>
               <select
                 value={diskType}
                 onChange={(e) => setDiskType(e.target.value)}
-                className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-xs text-graphite-50 font-mono focus:outline-none focus:border-brand-teal"
+                className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-xs text-[#E8EAF0] font-mono focus:outline-none focus:border-[#4E9F8E] transition-colors"
               >
                 <option value="ssd">NVMe / Enterprise SSD Tablespaces</option>
                 <option value="hdd">Magnetic Disk Spindles</option>
@@ -192,25 +192,25 @@ client_idle_timeout = 120.0
           </div>
 
           {/* Mathematical Proof Box */}
-          <div className="p-3 rounded bg-graphite-850 border border-graphite-600 space-y-1.5 text-xs font-mono">
-            <span className="font-bold text-graphite-50 uppercase text-[11px] block">
+          <div className="p-3.5 rounded bg-[#090B0E] border border-[#202630] space-y-1.5 text-xs font-mono">
+            <span className="font-bold text-[#E8EAF0] uppercase text-[11px] block">
               Little&apos;s Law Mathematical Derivation
             </span>
-            <div className="text-lg font-bold font-mono text-brand-teal tabular-nums">
+            <div className="text-base font-bold font-mono text-[#4E9F8E] tabular-nums">
               N = &lambda; &times; W = {littlesConcurrency} conns
             </div>
-            <p className="text-[11px] text-graphite-300 font-sans leading-relaxed">
+            <p className="text-[11px] text-[#929AA6] font-sans leading-relaxed">
               At {qps} QPS with {latencyMs} ms latency, exactly {littlesConcurrency} concurrent database workers are required on average. Sizing pool to {calculatedPool} accommodates a 25% traffic variance buffer.
             </p>
           </div>
         </div>
 
         {/* Right Column: Generated PgBouncer INI Config (7 cols) */}
-        <div className="lg:col-span-7 panel p-4 space-y-3 flex flex-col">
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+        <div className="lg:col-span-7 bg-[#0D1014] border border-[#202630] rounded p-4 space-y-3 flex flex-col shadow-[0_4px_20px_rgba(0,0,0,0.7)]">
+          <div className="flex items-center justify-between border-b border-[#202630] pb-2">
             <div className="flex items-center gap-2">
-              <FileCode className="w-4 h-4 text-brand-teal" />
-              <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+              <FileCode className="w-4 h-4 text-[#4E9F8E]" />
+              <h2 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase">
                 Generated Configuration (pgbouncer.ini)
               </h2>
             </div>
@@ -218,14 +218,14 @@ client_idle_timeout = 120.0
             <div className="flex items-center gap-2">
               <button
                 onClick={copyToClipboard}
-                className="flex items-center gap-1 px-2.5 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-600 text-graphite-200 text-xs font-mono transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#12161C] hover:bg-[#191E25] border border-[#202630] text-[#CBD5E1] text-xs font-mono transition-colors"
               >
-                {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-status-success" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-[#34D399]" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied ? "Copied" : "Copy INI"}</span>
               </button>
               <button
                 onClick={handleDownloadIni}
-                className="flex items-center gap-1 px-2.5 py-1 rounded bg-brand-teal hover:bg-brand-tealLight text-graphite-950 font-bold text-xs font-mono transition-colors shadow-subtle"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#4E9F8E] hover:bg-[#5bb8a4] text-[#050607] font-bold text-xs font-mono transition-colors shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download</span>
@@ -233,7 +233,7 @@ client_idle_timeout = 120.0
             </div>
           </div>
 
-          <div className="p-3 rounded bg-graphite-950 border border-graphite-600 font-mono text-xs text-graphite-200 overflow-x-auto leading-relaxed flex-1 max-h-[460px]">
+          <div className="p-3.5 rounded bg-[#050607] border border-[#202630] font-mono text-xs text-[#CBD5E1] overflow-x-auto leading-relaxed flex-1 max-h-[460px] shadow-inner">
             <pre className="whitespace-pre">{pgbouncerIni}</pre>
           </div>
         </div>

@@ -15,11 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-graphite-900 text-graphite-50 flex min-h-screen font-sans antialiased selection:bg-brand-tealDark selection:text-brand-tealLight">
+      <body className="bg-[#050607] text-[#E8EAF0] flex min-h-screen font-sans antialiased selection:bg-[#174338] selection:text-[#E8EAF0]">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <Header />
-          <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+          <main className="flex-1 p-3.5 sm:p-5 lg:p-6 overflow-y-auto">
             {children}
           </main>
         </div>

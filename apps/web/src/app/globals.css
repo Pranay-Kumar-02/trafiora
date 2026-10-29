@@ -4,20 +4,28 @@
 
 @layer base {
   :root {
-    --bg-page: #0B0D10;
-    --bg-surface: #12161C;
-    --bg-elevated: #181D25;
-    --border-subtle: #222A35;
-    --border-interactive: #2B3542;
-    --text-primary: #E8EDF3;
-    --text-secondary: #9AA5B1;
-    --text-muted: #596573;
-    --brand-teal: #66D9C0;
+    --bg-page: #050607;
+    --bg-secondary: #090B0E;
+    --bg-surface: #0D1014;
+    --bg-raised: #12161C;
+    --bg-hover: #191E25;
+    --border-subtle: #202630;
+    --border-interactive: #28323F;
+    --border-active: #364354;
+    --text-primary: #E8EAF0;
+    --text-secondary: #929AA6;
+    --text-muted: #626C79;
+    --brand-teal: #4E9F8E;
+    --brand-silver: #CBD5E1;
   }
 
   body {
     color: var(--text-primary);
-    background-color: var(--bg-page);
+    background-color: #050607;
+    background-image: 
+      radial-gradient(ellipse 85% 45% at 50% -15%, rgba(255, 255, 255, 0.02), transparent 75%),
+      radial-gradient(circle at 100% 100%, rgba(14, 25, 36, 0.05), transparent 45%);
+    background-attachment: fixed;
     font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
     min-height: 100vh;
     text-rendering: optimizeLegibility;
@@ -27,61 +35,80 @@
 
   /* Accessible focus indicators */
   :focus-visible {
-    outline: 1px solid var(--brand-teal);
+    outline: 1px solid var(--border-active);
     outline-offset: 1px;
   }
 }
 
-/* Tabular figures for telemetry data to prevent layout shift */
+/* Tabular figures for database metrics to prevent layout shift */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Structured precision surface utility classes */
+/* Precision engineered dark-metal surface classes */
 .panel {
-  background-color: #12161C;
-  border: 1px solid #222A35;
-  border-radius: 8px;
+  background-color: #0D1014;
+  border: 1px solid #202630;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .panel-elevated {
-  background-color: #181D25;
-  border: 1px solid #2B3542;
-  border-radius: 8px;
+  background-color: #12161C;
+  border: 1px solid #28323F;
+  border-radius: 6px;
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .panel-interactive {
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .panel-interactive:hover {
-  border-color: #384556;
-  background-color: #151A21;
+  border-color: #364354;
+  background-color: #12161C;
+  box-shadow: 0 6px 24px -2px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* Compact, clean scrollbars */
+/* Precision inset control */
+.control-inset {
+  background-color: #090B0E;
+  border: 1px solid #202630;
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.7);
+}
+
+/* Compact, quiet scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0D10;
+  background: #050607;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #222A35;
-  border-radius: 3px;
+  background: #202630;
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2B3542;
+  background: #28323F;
 }
 
-/* Subtle code syntax highlighting helpers */
-.token-keyword { color: #66D9C0; font-weight: 600; }
-.token-function { color: #38BDF8; }
-.token-string { color: #FCD34D; }
-.token-number { color: #F472B6; }
-.token-comment { color: #596573; font-style: italic; }
-.token-table { color: #E8EDF3; font-weight: 500; }
+/* Restrained code syntax highlighting helpers */
+.token-keyword { color: #CBD5E1; font-weight: 600; }
+.token-function { color: #929AA6; }
+.token-string { color: #E8EAF0; }
+.token-number { color: #CBD5E1; }
+.token-comment { color: #626C79; font-style: italic; }
+.token-table { color: #E8EAF0; font-weight: 500; }
+
+/* Global accessibility: Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

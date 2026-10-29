@@ -190,29 +190,29 @@ export default function CanvasPage() {
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
       {/* Header & Controls Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202630] pb-3">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
-            <Layers className="w-5 h-5 text-brand-teal" />
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-[#E8EAF0] flex items-center gap-2 font-mono">
+            <Layers className="w-5 h-5 text-[#4E9F8E]" />
             <span>INTERACTIVE WORKLOAD ARCHITECTURE &amp; FLOW CANVAS</span>
           </h1>
-          <p className="text-xs text-graphite-200 mt-0.5">
+          <p className="text-xs text-[#929AA6] mt-0.5">
             Visualizes client request flow, PgBouncer pool multiplexing, query execution backpressure, and storage bottlenecks.
           </p>
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center gap-2 text-xs font-mono">
+        <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
           {/* Simulation Mode Badge */}
           <Badge variant="simulated">
-            ARCHITECTURAL MODEL — SIMULATED / OFFLINE
+            ARCHITECTURAL MODEL &bull; SIMULATION (OFFLINE)
           </Badge>
 
           {/* Scenario Selector */}
           <select
             value={scenario}
             onChange={(e) => setScenario(e.target.value)}
-            className="bg-graphite-850 border border-graphite-600 rounded px-2.5 py-1 text-xs text-graphite-100 focus:outline-none focus:border-brand-teal"
+            className="bg-[#090B0E] border border-[#202630] rounded px-2.5 py-1 text-xs text-[#E8EAF0] focus:outline-none focus:border-[#364354] shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]"
           >
             <option value="normal">Normal Workload Flow (1,480 QPS)</option>
             <option value="viral_spike">Traffic Spike (Zipfian Skew)</option>
@@ -223,10 +223,10 @@ export default function CanvasPage() {
           {/* Animation Controls */}
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="p-1 rounded bg-graphite-850 hover:bg-graphite-750 border border-graphite-600 text-graphite-200"
+            className="p-1.5 rounded bg-[#0D1014] hover:bg-[#12161C] border border-[#202630] text-[#CBD5E1] transition-colors"
             title={isPlaying ? "Pause Flow" : "Resume Flow"}
           >
-            {isPlaying ? <Pause className="w-3.5 h-3.5 text-status-warning" /> : <Play className="w-3.5 h-3.5 text-brand-teal" />}
+            {isPlaying ? <Pause className="w-3.5 h-3.5 text-[#FBBF24]" /> : <Play className="w-3.5 h-3.5 text-[#4E9F8E]" />}
           </button>
 
           {/* Reduced Motion Toggle */}
@@ -234,8 +234,8 @@ export default function CanvasPage() {
             onClick={() => setReducedMotion(!reducedMotion)}
             className={`px-2 py-1 rounded border text-[11px] flex items-center gap-1 transition-colors ${
               reducedMotion
-                ? "bg-status-warningSurface text-status-warning border-status-warningBorder"
-                : "bg-graphite-850 text-graphite-300 border-graphite-600 hover:text-graphite-100"
+                ? "bg-[#191408] text-[#FBBF24] border-[#38290E]"
+                : "bg-[#0D1014] text-[#626C79] border-[#202630] hover:text-[#CBD5E1]"
             }`}
             title="Toggle reduced motion for accessibility"
           >
@@ -248,27 +248,27 @@ export default function CanvasPage() {
       {/* Canvas Viewport & Node Detail Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* SVG Flow Canvas (8 cols) */}
-        <div className="lg:col-span-8 panel p-4 space-y-2 relative overflow-hidden bg-graphite-950 flex flex-col justify-between min-h-[460px]">
+        <div className="lg:col-span-8 panel p-4 space-y-2 relative overflow-hidden bg-[#050607] flex flex-col justify-between min-h-[460px] border border-[#202630]">
           {/* Zoom & Pan Overlay */}
-          <div className="absolute top-3 right-3 flex items-center gap-1 bg-graphite-900/90 p-1 rounded border border-graphite-600 z-10 text-xs font-mono">
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-[#090B0E]/90 p-1 rounded border border-[#202630] z-10 text-xs font-mono shadow-[0_4px_16px_rgba(0,0,0,0.7)]">
             <button
               onClick={() => handleZoom(-10)}
-              className="p-1 rounded hover:bg-graphite-800 text-graphite-300 hover:text-white"
+              className="p-1 rounded hover:bg-[#12161C] text-[#626C79] hover:text-[#E8EAF0] transition-colors"
               title="Zoom Out"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
-            <span className="px-1.5 text-graphite-200 text-[11px]">{zoomLevel}%</span>
+            <span className="px-1.5 text-[#CBD5E1] text-[11px]">{zoomLevel}%</span>
             <button
               onClick={() => handleZoom(10)}
-              className="p-1 rounded hover:bg-graphite-800 text-graphite-300 hover:text-white"
+              className="p-1 rounded hover:bg-[#12161C] text-[#626C79] hover:text-[#E8EAF0] transition-colors"
               title="Zoom In"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleResetView}
-              className="p-1 rounded hover:bg-graphite-800 text-graphite-300 hover:text-white"
+              className="p-1 rounded hover:bg-[#12161C] text-[#626C79] hover:text-[#E8EAF0] transition-colors"
               title="Reset View"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -282,8 +282,25 @@ export default function CanvasPage() {
               className="w-full h-auto max-w-full select-none"
               style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: "center center" }}
             >
-              {/* Defs for Flow Marker & Gradients */}
+              {/* Defs for Flow Marker, Spatial Grid & Depth Shadows */}
               <defs>
+                {/* Subtle low-contrast spatial grid */}
+                <pattern
+                  id="spatialGrid"
+                  width="30"
+                  height="30"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <path
+                    d="M 30 0 L 0 0 0 30"
+                    fill="none"
+                    stroke="#11151B"
+                    strokeWidth="0.6"
+                  />
+                  <circle cx="30" cy="30" r="0.75" fill="#1A212B" />
+                </pattern>
+
+                {/* Restrained arrow marker */}
                 <marker
                   id="arrow"
                   viewBox="0 0 10 10"
@@ -293,57 +310,93 @@ export default function CanvasPage() {
                   markerHeight="5"
                   orient="auto-start-reverse"
                 >
-                  <path d="M 0 1 L 8 5 L 0 9 z" fill="#66D9C0" />
+                  <path d="M 0 1 L 8 5 L 0 9 z" fill="#4E9F8E" />
                 </marker>
+
+                {/* Deep obsidian depth shadow for selected node */}
+                <filter id="nodeShadow" x="-15%" y="-15%" width="130%" height="130%">
+                  <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000000" floodOpacity="0.85" />
+                </filter>
               </defs>
 
-              {/* Connecting Data Flow Lines */}
-              {/* Clients -> Ingress */}
-              <line
-                x1="210"
-                y1="165"
-                x2="260"
-                y2="165"
-                stroke="#66D9C0"
-                strokeWidth="2"
-                strokeDasharray={isPlaying && !reducedMotion ? "4 3" : undefined}
-                className={isPlaying && !reducedMotion ? "animate-pulse" : ""}
-                markerEnd="url(#arrow)"
-              />
+              {/* Spatial Grid Background */}
+              <rect width="940" height="360" fill="url(#spatialGrid)" />
 
-              {/* Ingress -> Pooler */}
-              <line
-                x1="430"
-                y1="165"
-                x2="480"
-                y2="165"
-                stroke="#66D9C0"
-                strokeWidth="2"
-                strokeDasharray={isPlaying && !reducedMotion ? "4 3" : undefined}
-                className={isPlaying && !reducedMotion ? "animate-pulse" : ""}
-                markerEnd="url(#arrow)"
-              />
-
-              {/* Pooler -> Engine */}
+              {/* Physical Connection Paths */}
+              {/* Clients -> Ingress Path */}
               <path
+                id="path-clients-ingress"
+                d="M 210 165 L 260 165"
+                fill="none"
+                stroke="#28323F"
+                strokeWidth="1.8"
+                markerEnd="url(#arrow)"
+              />
+
+              {/* Ingress -> Pooler Path */}
+              <path
+                id="path-ingress-pooler"
+                d="M 430 165 L 480 165"
+                fill="none"
+                stroke="#28323F"
+                strokeWidth="1.8"
+                markerEnd="url(#arrow)"
+              />
+
+              {/* Pooler -> Engine Path */}
+              <path
+                id="path-pooler-engine"
                 d="M 650 165 C 675 165, 675 130, 700 130"
                 fill="none"
-                stroke="#66D9C0"
-                strokeWidth="2"
-                strokeDasharray={isPlaying && !reducedMotion ? "4 3" : undefined}
-                className={isPlaying && !reducedMotion ? "animate-pulse" : ""}
+                stroke="#28323F"
+                strokeWidth="1.8"
                 markerEnd="url(#arrow)"
               />
 
-              {/* Engine -> Storage (WAL Flush) */}
+              {/* Engine -> Storage (WAL Flush) Path */}
               <path
+                id="path-engine-storage"
                 d="M 790 180 L 790 220"
                 fill="none"
-                stroke="#9AA5B1"
-                strokeWidth="1.5"
-                strokeDasharray="3 3"
+                stroke="#202630"
+                strokeWidth="1.2"
+                strokeDasharray="2 2"
                 markerEnd="url(#arrow)"
               />
+
+              {/* Controlled request flow particles along connections (when active and motion allowed) */}
+              {isPlaying && !reducedMotion && (
+                <>
+                  <circle r="2.5" fill="#4E9F8E">
+                    <animateMotion
+                      dur="1.8s"
+                      repeatCount="indefinite"
+                      path="M 210 165 L 260 165"
+                    />
+                  </circle>
+                  <circle r="2.5" fill="#4E9F8E">
+                    <animateMotion
+                      dur="1.8s"
+                      repeatCount="indefinite"
+                      path="M 430 165 L 480 165"
+                    />
+                  </circle>
+                  <circle r="2.5" fill="#CBD5E1">
+                    <animateMotion
+                      dur="2.2s"
+                      repeatCount="indefinite"
+                      path="M 650 165 C 675 165, 675 130, 700 130"
+                    />
+                  </circle>
+                  <circle r="1.8" fill="#626C79">
+                    <animateMotion
+                      dur="3.0s"
+                      repeatCount="indefinite"
+                      path="M 790 180 L 790 220"
+                    />
+                  </circle>
+                </>
+              )}
 
               {/* Render Architectural Nodes */}
               {CANVAS_NODES.map((node) => {
@@ -352,22 +405,23 @@ export default function CanvasPage() {
                 const isSaturated = node.status === "saturated";
 
                 const strokeColor = isSelected
-                  ? "#66D9C0"
+                  ? "#4E9F8E"
                   : isSaturated
-                  ? "#EF4444"
+                  ? "#FB7185"
                   : isWarning
-                  ? "#F59E0B"
-                  : "#222A35";
+                  ? "#FBBF24"
+                  : "#202630";
 
                 const fillColor = isSelected
-                  ? "#181D25"
-                  : "#12161C";
+                  ? "#12161C"
+                  : "#0D1014";
 
                 return (
                   <g
                     key={node.id}
                     onClick={() => setSelectedNode(node)}
                     className="cursor-pointer transition-all"
+                    filter={isSelected ? "url(#nodeShadow)" : undefined}
                   >
                     {/* Node Container Box */}
                     <rect
@@ -375,17 +429,17 @@ export default function CanvasPage() {
                       y={node.y}
                       width={node.width}
                       height={node.height}
-                      rx="8"
+                      rx="6"
                       fill={fillColor}
                       stroke={strokeColor}
-                      strokeWidth={isSelected ? "2" : "1.2"}
+                      strokeWidth={isSelected ? "1.5" : "1"}
                     />
 
                     {/* Node Header Label */}
                     <text
                       x={node.x + 12}
                       y={node.y + 22}
-                      className="text-[11px] font-mono font-bold fill-[#E8EDF3]"
+                      className="text-[11px] font-mono font-bold fill-[#E8EAF0]"
                     >
                       {node.name.length > 20 ? node.name.slice(0, 19) + "..." : node.name}
                     </text>
@@ -394,7 +448,7 @@ export default function CanvasPage() {
                     <text
                       x={node.x + 12}
                       y={node.y + 36}
-                      className="text-[9px] font-mono fill-[#9AA5B1]"
+                      className="text-[9px] font-mono fill-[#929AA6]"
                     >
                       {node.role}
                     </text>
@@ -405,7 +459,7 @@ export default function CanvasPage() {
                       y1={node.y + 45}
                       x2={node.x + node.width}
                       y2={node.y + 45}
-                      stroke="#222A35"
+                      stroke="#202630"
                       strokeWidth="0.8"
                     />
 
@@ -413,7 +467,7 @@ export default function CanvasPage() {
                     <text
                       x={node.x + 12}
                       y={node.y + 62}
-                      className="text-[9px] font-mono fill-[#596573]"
+                      className="text-[9px] font-mono fill-[#626C79]"
                     >
                       {node.telemetry.primaryMetric}:
                     </text>
@@ -421,7 +475,7 @@ export default function CanvasPage() {
                       x={node.x + node.width - 12}
                       y={node.y + 62}
                       textAnchor="end"
-                      className="text-[10px] font-mono font-bold fill-[#66D9C0]"
+                      className="text-[10px] font-mono font-bold fill-[#E8EAF0] tabular-nums"
                     >
                       {node.telemetry.value}
                     </text>
@@ -432,7 +486,7 @@ export default function CanvasPage() {
                         <text
                           x={node.x + 12}
                           y={node.y + 78}
-                          className="text-[9px] font-mono fill-[#596573]"
+                          className="text-[9px] font-mono fill-[#626C79]"
                         >
                           {node.telemetry.secondaryMetric}:
                         </text>
@@ -440,7 +494,7 @@ export default function CanvasPage() {
                           x={node.x + node.width - 12}
                           y={node.y + 78}
                           textAnchor="end"
-                          className="text-[10px] font-mono font-bold fill-[#E8EDF3]"
+                          className="text-[10px] font-mono font-bold fill-[#CBD5E1] tabular-nums"
                         >
                           {node.telemetry.secondaryValue}
                         </text>
@@ -449,7 +503,10 @@ export default function CanvasPage() {
 
                     {/* Warning / Saturated Icon Badge */}
                     {isWarning && (
-                      <circle cx={node.x + node.width - 10} cy={node.y + 12} r="4" fill="#F59E0B" />
+                      <circle cx={node.x + node.width - 10} cy={node.y + 12} r="3" fill="#FBBF24" />
+                    )}
+                    {isSaturated && (
+                      <circle cx={node.x + node.width - 10} cy={node.y + 12} r="3" fill="#FB7185" />
                     )}
                   </g>
                 );
@@ -458,29 +515,29 @@ export default function CanvasPage() {
           </div>
 
           {/* Canvas Footer Legend */}
-          <div className="flex items-center justify-between text-[11px] font-mono text-graphite-300 border-t border-graphite-600/80 pt-2 px-1">
+          <div className="flex items-center justify-between text-[11px] font-mono text-[#626C79] border-t border-[#202630] pt-2 px-1">
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-brand-teal" />
-                <span>Healthy Component</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4E9F8E]" />
+                <span className="text-[#929AA6]">Healthy Component</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-status-warning" />
-                <span>Bottleneck Warning</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF24]" />
+                <span className="text-[#929AA6]">Bottleneck Warning</span>
               </span>
             </div>
-            <span>Click any node to inspect queue depth &amp; capacity</span>
+            <span>Click any node to inspect queue depth &amp; capacity limits</span>
           </div>
         </div>
 
         {/* Right Column: Node Inspector Drawer (4 cols) */}
         <div className="lg:col-span-4 panel p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-3">
+          <div className="flex items-center justify-between border-b border-[#202630] pb-3">
             <div>
-              <span className="text-[10px] font-mono text-graphite-300 uppercase block">
+              <span className="text-[10px] font-mono text-[#626C79] uppercase block tracking-wider">
                 Component Telemetry Inspector
               </span>
-              <h2 className="text-sm font-bold text-graphite-50 font-mono">{selectedNode.name}</h2>
+              <h2 className="text-sm font-bold text-[#E8EAF0] font-mono">{selectedNode.name}</h2>
             </div>
             <Badge
               variant={
@@ -496,46 +553,46 @@ export default function CanvasPage() {
           </div>
 
           {/* Description */}
-          <p className="text-xs text-graphite-200 leading-relaxed">
+          <p className="text-xs text-[#929AA6] leading-relaxed">
             {selectedNode.details.description}
           </p>
 
           {/* Resource & Capacity Limits */}
-          <div className="p-3 rounded bg-graphite-850 border border-graphite-600 space-y-2 text-xs font-mono">
+          <div className="p-3 rounded bg-[#090B0E] border border-[#202630] space-y-2 text-xs font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
             <div className="flex justify-between">
-              <span className="text-graphite-300">Current Queue Depth:</span>
-              <span className="text-graphite-50 font-bold tabular-nums">
+              <span className="text-[#626C79]">Current Queue Depth:</span>
+              <span className="text-[#E8EAF0] font-bold tabular-nums">
                 {selectedNode.details.queueDepth} requests
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-graphite-300">Operational Ceiling:</span>
-              <span className="text-graphite-100">{selectedNode.details.capacityLimit}</span>
+              <span className="text-[#626C79]">Operational Ceiling:</span>
+              <span className="text-[#CBD5E1]">{selectedNode.details.capacityLimit}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-graphite-300">Telemetry Driver:</span>
-              <span className="text-brand-teal">Simulated Model</span>
+              <span className="text-[#626C79]">Telemetry Driver:</span>
+              <span className="text-[#4E9F8E]">Simulated Model</span>
             </div>
           </div>
 
           {/* Risk & Bottleneck Finding */}
           <div className="space-y-1.5 text-xs">
-            <span className="font-semibold text-status-warning font-mono text-[11px] flex items-center gap-1">
+            <span className="font-semibold text-[#FBBF24] font-mono text-[11px] flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5" />
               <span>Observed Risk Factor:</span>
             </span>
-            <p className="p-2.5 rounded bg-status-warningSurface border border-status-warningBorder text-graphite-100 text-[11px] leading-relaxed">
+            <p className="p-2.5 rounded bg-[#191408] border border-[#38290E] text-[#E8EAF0] text-[11px] leading-relaxed">
               {selectedNode.details.bottleneckRisk}
             </p>
           </div>
 
           {/* Recommended Action */}
-          <div className="p-3 rounded bg-graphite-950 border border-graphite-600 space-y-1.5 text-xs">
-            <span className="font-semibold text-graphite-50 font-mono text-[11px] flex items-center gap-1">
-              <Zap className="w-3.5 h-3.5 text-brand-teal" />
+          <div className="p-3 rounded bg-[#050607] border border-[#202630] space-y-1.5 text-xs shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+            <span className="font-semibold text-[#E8EAF0] font-mono text-[11px] flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 text-[#4E9F8E]" />
               <span>Engine Recommendation:</span>
             </span>
-            <p className="text-graphite-200 text-[11px] leading-relaxed">
+            <p className="text-[#929AA6] text-[11px] leading-relaxed">
               {selectedNode.details.recommendation}
             </p>
           </div>
@@ -544,7 +601,7 @@ export default function CanvasPage() {
           <div className="pt-2">
             <Link
               href="/protection"
-              className="w-full py-1.5 px-3 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-500 text-xs font-mono text-graphite-100 flex items-center justify-center gap-1.5 transition-colors"
+              className="w-full py-1.5 px-3 rounded bg-[#12161C] hover:bg-[#191E25] border border-[#28323F] hover:border-[#364354] text-xs font-mono text-[#E8EAF0] flex items-center justify-center gap-1.5 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)]"
             >
               <span>Tune Protection Sizing &rarr;</span>
             </Link>

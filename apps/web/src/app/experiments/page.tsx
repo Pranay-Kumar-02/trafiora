@@ -142,14 +142,14 @@ export default function ExperimentsPage() {
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202630] pb-3">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
-            <Play className="w-5 h-5 text-brand-teal" />
-            <span>ISOLATED BENCHMARK EXPERIMENTS &amp; WORKFLOW</span>
+          <h1 className="text-sm font-bold tracking-tight text-[#E8EAF0] flex items-center gap-2 font-mono uppercase">
+            <Play className="w-4 h-4 text-[#4E9F8E]" />
+            <span>Isolated Workload Benchmarks &amp; Scenarios</span>
           </h1>
-          <p className="text-xs text-graphite-200 mt-0.5">
-            Execute reproducible workload scenarios against explicitly authorized Tier 2 database targets.
+          <p className="text-xs text-[#929AA6] mt-0.5 font-sans">
+            Execute reproducible workload experiments against explicitly authorized Tier 2 database targets.
           </p>
         </div>
 
@@ -160,14 +160,14 @@ export default function ExperimentsPage() {
       </div>
 
       {/* Safety Boundary Banner */}
-      <div className="panel p-3.5 border-graphite-600 bg-graphite-850 flex items-start gap-3 text-xs text-graphite-200 font-mono">
-        <Activity className="w-4 h-4 text-brand-teal shrink-0 mt-0.5" />
+      <div className="bg-[#0D1014] p-3.5 rounded border border-[#202630] flex items-start gap-3 text-xs text-[#929AA6] font-mono shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
+        <Activity className="w-4 h-4 text-[#4E9F8E] shrink-0 mt-0.5" />
         <div className="space-y-0.5">
-          <span className="font-bold text-graphite-50 uppercase text-[11px] block">
+          <span className="font-bold text-[#E8EAF0] uppercase text-[11px] block">
             Automated Orphan Session Cleanup &amp; Safety Isolation
           </span>
-          <p className="text-graphite-300 leading-relaxed text-[11px] font-sans">
-            Benchmark workloads run with unique <code className="text-brand-teal font-mono">application_name=trafiora_bench_[id]</code>. Sessions are automatically terminated upon completion, cancellation, or error. Tier 1 read-only databases strictly reject execution.
+          <p className="text-[#929AA6] leading-relaxed text-[11px] font-sans">
+            Benchmark workloads run with unique <code className="text-[#CBD5E1] bg-[#050607] px-1.5 py-0.5 rounded border border-[#202630] font-mono">application_name=trafiora_bench_[id]</code>. Sessions are automatically terminated upon completion, cancellation, or error. Tier 1 read-only databases strictly reject execution.
           </p>
         </div>
       </div>
@@ -175,23 +175,23 @@ export default function ExperimentsPage() {
       {/* Experiment Configuration & Launch Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Column: Launch Form (5 cols) */}
-        <div className="lg:col-span-5 panel p-4 space-y-4">
-          <div className="border-b border-graphite-600 pb-2">
-            <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-brand-teal" />
+        <div className="lg:col-span-5 bg-[#0D1014] border border-[#202630] rounded p-4 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.7)]">
+          <div className="border-b border-[#202630] pb-2">
+            <h2 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-[#4E9F8E]" />
               <span>Configure Benchmark Run</span>
             </h2>
           </div>
 
           {errorMessage && (
-            <div className="p-2.5 rounded bg-status-errorSurface border border-status-errorBorder text-xs text-status-error font-mono flex items-center gap-2">
+            <div className="p-2.5 rounded bg-[#180A0A] border border-[#441616] text-xs text-[#FB7185] font-mono flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {statusMessage && (
-            <div className="p-2.5 rounded bg-status-successSurface border border-status-successBorder text-xs text-status-success font-mono flex items-center gap-2">
+            <div className="p-2.5 rounded bg-[#0A1612] border border-[#17382B] text-xs text-[#34D399] font-mono flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{statusMessage}</span>
             </div>
@@ -199,22 +199,22 @@ export default function ExperimentsPage() {
 
           <form onSubmit={handleLaunch} className="space-y-3 text-xs font-mono">
             <div>
-              <label className="text-graphite-300 block mb-1">Experiment Name / Label</label>
+              <label className="text-[#929AA6] block mb-1">Experiment Label</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] focus:outline-none focus:border-[#4E9F8E] transition-colors"
                 required
               />
             </div>
 
             <div>
-              <label className="text-graphite-300 block mb-1">Target Connection</label>
+              <label className="text-[#929AA6] block mb-1">Target Connection</label>
               <select
                 value={selectedConnection}
                 onChange={(e) => setSelectedConnection(e.target.value)}
-                className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] focus:outline-none focus:border-[#4E9F8E] transition-colors"
               >
                 {connections.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -223,18 +223,18 @@ export default function ExperimentsPage() {
                 ))}
               </select>
               {isTier1Blocked && (
-                <span className="text-[10px] text-status-error block mt-1">
+                <span className="text-[10px] text-[#FB7185] block mt-1">
                   Safety Gate Warning: Tier 1 Read-Only targets will reject execution!
                 </span>
               )}
             </div>
 
             <div>
-              <label className="text-graphite-300 block mb-1">Workload Scenario Template</label>
+              <label className="text-[#929AA6] block mb-1">Workload Scenario Template</label>
               <select
                 value={selectedScenario}
                 onChange={(e) => setSelectedScenario(e.target.value)}
-                className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] focus:outline-none focus:border-[#4E9F8E] transition-colors"
               >
                 <option value="viral_post_spike">Viral Post Spike (Zipfian Skew on Hot Records)</option>
                 <option value="heavy_read_aggregation">Heavy Read Aggregation &amp; Joins</option>
@@ -244,36 +244,36 @@ export default function ExperimentsPage() {
 
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-graphite-300 block mb-1">Virtual Users (VUs)</label>
+                <label className="text-[#929AA6] block mb-1">Virtual Users</label>
                 <input
                   type="number"
                   min={1}
                   max={200}
                   value={vus}
                   onChange={(e) => setVus(Number(e.target.value))}
-                  className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 tabular-nums focus:outline-none focus:border-brand-teal"
+                  className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] tabular-nums focus:outline-none focus:border-[#4E9F8E] transition-colors"
                 />
               </div>
               <div>
-                <label className="text-graphite-300 block mb-1">Duration (s)</label>
+                <label className="text-[#929AA6] block mb-1">Duration (s)</label>
                 <input
                   type="number"
                   min={5}
                   max={120}
                   value={duration}
                   onChange={(e) => setDuration(Number(e.target.value))}
-                  className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 tabular-nums focus:outline-none focus:border-brand-teal"
+                  className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] tabular-nums focus:outline-none focus:border-[#4E9F8E] transition-colors"
                 />
               </div>
               <div>
-                <label className="text-graphite-300 block mb-1">Repetitions (K)</label>
+                <label className="text-[#929AA6] block mb-1">Reps (K)</label>
                 <input
                   type="number"
                   min={1}
                   max={10}
                   value={repetitions}
                   onChange={(e) => setRepetitions(Number(e.target.value))}
-                  className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 tabular-nums focus:outline-none focus:border-brand-teal"
+                  className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] tabular-nums focus:outline-none focus:border-[#4E9F8E] transition-colors"
                 />
               </div>
             </div>
@@ -284,9 +284,9 @@ export default function ExperimentsPage() {
                 id="is-baseline"
                 checked={isBaseline}
                 onChange={(e) => setIsBaseline(e.target.checked)}
-                className="rounded border-graphite-600"
+                className="rounded border-[#202630] bg-[#090B0E] text-[#4E9F8E] focus:ring-0"
               />
-              <label htmlFor="is-baseline" className="text-graphite-200">
+              <label htmlFor="is-baseline" className="text-[#929AA6] text-[11px]">
                 Designate this run as Baseline for A/B regression comparisons
               </label>
             </div>
@@ -295,25 +295,25 @@ export default function ExperimentsPage() {
               <button
                 type="submit"
                 disabled={isDispatching || isTier1Blocked}
-                className="w-full py-2 px-4 rounded bg-brand-teal hover:bg-brand-tealLight disabled:opacity-50 text-graphite-950 font-bold text-xs font-mono transition-colors shadow-subtle flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 rounded bg-[#4E9F8E] hover:bg-[#5bb8a4] disabled:opacity-40 text-[#050607] font-bold text-xs font-mono transition-colors shadow-sm flex items-center justify-center gap-2"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>{isDispatching ? "Launching Benchmark..." : "Launch Isolated Benchmark"}</span>
+                <span>{isDispatching ? "Dispatching Scenario..." : "Launch Isolated Benchmark"}</span>
               </button>
             </div>
           </form>
         </div>
 
         {/* Right Column: Execution History & Status Table (7 cols) */}
-        <div className="lg:col-span-7 panel p-4 space-y-3 flex flex-col">
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
-            <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-brand-teal" />
+        <div className="lg:col-span-7 bg-[#0D1014] border border-[#202630] rounded p-4 space-y-3 flex flex-col shadow-[0_4px_20px_rgba(0,0,0,0.7)]">
+          <div className="flex items-center justify-between border-b border-[#202630] pb-2">
+            <h2 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-[#4E9F8E]" />
               <span>Experiment History &amp; Monitored Runs</span>
             </h2>
             <button
               onClick={loadData}
-              className="text-xs text-graphite-300 hover:text-graphite-100 font-mono flex items-center gap-1"
+              className="text-xs text-[#929AA6] hover:text-[#E8EAF0] font-mono flex items-center gap-1 transition-colors"
             >
               <RotateCw className="w-3 h-3" />
               <span>Refresh</span>
@@ -323,7 +323,7 @@ export default function ExperimentsPage() {
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left text-xs font-mono">
               <thead>
-                <tr className="border-b border-graphite-600 text-[10px] text-graphite-300 uppercase">
+                <tr className="border-b border-[#202630] text-[10px] text-[#626C79] uppercase">
                   <th className="py-2 px-2.5">Experiment</th>
                   <th className="py-2 px-2.5">Status</th>
                   <th className="py-2 px-2.5">Progress</th>
@@ -332,15 +332,15 @@ export default function ExperimentsPage() {
                   <th className="py-2 px-2.5">Source Attribution</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-graphite-600/60">
+              <tbody className="divide-y divide-[#191E25]">
                 {experiments.map((e) => {
                   const metrics = e.summary_metrics || {};
                   const isSim = metrics.is_simulated === true;
                   return (
-                    <tr key={e.id} className="hover:bg-graphite-850/60 transition-colors">
+                    <tr key={e.id} className="hover:bg-[#12161C]/50 transition-colors">
                       <td className="py-2.5 px-2.5">
-                        <div className="font-bold text-graphite-100 font-sans">{e.name}</div>
-                        <div className="text-[10px] text-graphite-300 font-mono">
+                        <div className="font-semibold text-[#E8EAF0] font-sans">{e.name}</div>
+                        <div className="text-[10px] text-[#626C79] font-mono">
                           {e.id.slice(0, 8)} &bull; {e.is_baseline ? "BASELINE" : "CANDIDATE"}
                         </div>
                       </td>
@@ -357,36 +357,36 @@ export default function ExperimentsPage() {
                           {e.status}
                         </Badge>
                       </td>
-                      <td className="py-2.5 px-2.5 text-graphite-200 tabular-nums">
+                      <td className="py-2.5 px-2.5 text-[#929AA6] tabular-nums">
                         {e.repetitions_completed} / {e.repetitions_planned} reps
                       </td>
-                      <td className="py-2.5 px-2.5 text-right font-bold text-graphite-50 tabular-nums">
+                      <td className="py-2.5 px-2.5 text-right font-bold text-[#E8EAF0] tabular-nums">
                         {metrics.tps ? `${metrics.tps} TPS` : "--"}
                       </td>
-                      <td className="py-2.5 px-2.5 text-right font-bold text-brand-teal tabular-nums">
+                      <td className="py-2.5 px-2.5 text-right font-bold text-[#CBD5E1] tabular-nums">
                         {metrics.latency_p95_ms ? `${metrics.latency_p95_ms} ms` : "--"}
                       </td>
                       <td className="py-2.5 px-2.5">
                         {metrics.measurement_source === "WIRE_EMULATOR_SANDBOX" ? (
                           <span
-                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-700/60"
+                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#181308] text-[#FBBF24] border border-[#38290E]"
                             title="Executed against in-process wire-protocol emulator; not real database performance"
                           >
                             EMULATOR (SANDBOX)
                           </span>
                         ) : isSim ? (
                           <span
-                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-graphite-750 text-graphite-300 border border-graphite-600"
+                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#090B0E] text-[#626C79] border border-[#202630]"
                             title={metrics.simulation_reason || "Simulated offline benchmark"}
                           >
                             SIMULATED
                           </span>
                         ) : metrics.measurement_source === "PGBENCH_SUBPROCESS" ? (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 font-semibold">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#0A1612] text-[#34D399] border border-[#17382B] font-semibold">
                             PGBENCH (VERIFIED LIVE)
                           </span>
                         ) : (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 font-semibold">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#0A1612] text-[#34D399] border border-[#17382B] font-semibold">
                             PSYCOPG (VERIFIED LIVE)
                           </span>
                         )}
@@ -396,7 +396,7 @@ export default function ExperimentsPage() {
                 })}
                 {experiments.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-6 text-center text-graphite-400 font-sans">
+                    <td colSpan={6} className="py-6 text-center text-[#626C79] font-sans">
                       No experiments registered yet. Configure and launch above.
                     </td>
                   </tr>

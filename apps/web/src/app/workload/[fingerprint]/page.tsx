@@ -53,26 +53,26 @@ export default function QueryDetailPage({
   const fingerprint = resolvedParams.fingerprint;
 
   return (
-    <div className="space-y-5 max-w-6xl mx-auto">
+    <div className="space-y-4 sm:space-y-5 max-w-6xl mx-auto">
       {/* Back Button */}
       <Link
         href="/workload"
-        className="inline-flex items-center gap-1.5 text-xs text-graphite-300 hover:text-brand-teal transition-colors font-mono"
+        className="inline-flex items-center gap-1.5 text-xs text-[#626C79] hover:text-[#CBD5E1] transition-colors font-mono"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>&larr; Back to Workload Query Catalog</span>
       </Link>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202630] pb-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-mono text-graphite-300 uppercase">
+            <span className="text-[10px] font-mono text-[#626C79] uppercase">
               SHA-256 Fingerprint
             </span>
-            <span className="text-xs font-mono font-bold text-brand-teal">{fingerprint}</span>
+            <span className="text-xs font-mono font-bold text-[#CBD5E1]">{fingerprint}</span>
           </div>
-          <h1 className="text-lg font-bold text-graphite-50 font-mono">
+          <h1 className="text-base sm:text-lg font-bold text-[#E8EAF0] font-mono tracking-tight">
             STATEMENT EXECUTION INTELLIGENCE &amp; AUDIT
           </h1>
         </div>
@@ -85,7 +85,7 @@ export default function QueryDetailPage({
 
       {/* Canonical SQL Box */}
       <div className="space-y-1.5">
-        <span className="text-[11px] font-mono text-graphite-300">Normalized Canonical SQL Template:</span>
+        <span className="text-[11px] font-mono text-[#626C79]">Normalized Canonical SQL Template:</span>
         <SQLViewer
           sql="SELECT * FROM transactions WHERE account_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3;"
           dialect="postgres"
@@ -135,25 +135,25 @@ export default function QueryDetailPage({
 
         {/* Right: Evidence-Based Recommendation */}
         <div className="panel p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
-            <h2 className="text-xs font-semibold text-graphite-50 font-mono uppercase flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-brand-teal" />
+          <div className="flex items-center justify-between border-b border-[#202630] pb-2">
+            <h2 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase flex items-center gap-1.5 tracking-tight">
+              <Zap className="w-3.5 h-3.5 text-[#4E9F8E]" />
               <span>Evidence-Based Optimization Advice</span>
             </h2>
             <Badge variant="critical">CRITICAL</Badge>
           </div>
 
-          <div className="p-3 rounded bg-graphite-950 border border-graphite-600 space-y-2.5 text-xs font-mono">
-            <span className="font-bold text-graphite-50 text-[11px] block">
+          <div className="p-3 rounded bg-[#090B0E] border border-[#202630] space-y-2.5 text-xs font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+            <span className="font-bold text-[#E8EAF0] text-[11px] block">
               Composite Index Recommendation
             </span>
-            <p className="text-graphite-200 text-[11px] font-sans leading-relaxed">
-              Add a composite index on <code className="text-brand-teal font-mono">transactions(account_id, created_at DESC)</code> to satisfy the equality filter and eliminate the costly table scan and disk sort nodes.
+            <p className="text-[#929AA6] text-[11px] font-sans leading-relaxed">
+              Add a composite index on <code className="text-[#CBD5E1] font-mono">transactions(account_id, created_at DESC)</code> to satisfy the equality filter and eliminate the costly table scan and disk sort nodes.
             </p>
-            <pre className="p-2.5 rounded bg-graphite-900 border border-graphite-700 font-mono text-xs text-brand-teal overflow-x-auto whitespace-pre-wrap">
+            <pre className="p-2.5 rounded bg-[#050607] border border-[#202630] font-mono text-xs text-[#CBD5E1] overflow-x-auto whitespace-pre-wrap">
               CREATE INDEX CONCURRENTLY idx_tx_account_created ON transactions (account_id, created_at DESC);
             </pre>
-            <div className="p-2 rounded bg-status-warningSurface border border-status-warningBorder text-status-warning text-[11px] font-mono flex items-center gap-1.5">
+            <div className="p-2 rounded bg-[#191408] border border-[#38290E] text-[#FBBF24] text-[11px] font-mono flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
               <span>Unverified DDL: Test in isolated Tier 3 sandbox before applying to production.</span>
             </div>

@@ -15,10 +15,10 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { Badge } from "../../components/ui/Badge";
-import { SQLViewer } from "../../components/ui/SQLViewer";
-import { QueryPlanViewer, PlanNode } from "../../components/ui/QueryPlanViewer";
-import { apiClient } from "../../lib/api-client";
+import { Badge } from "@/components/ui/Badge";
+import { SQLViewer } from "@/components/ui/SQLViewer";
+import { QueryPlanViewer, PlanNode } from "@/components/ui/QueryPlanViewer";
+import { apiClient } from "@/lib/api-client";
 
 interface QueryItem {
   fingerprint: string;
@@ -230,15 +230,15 @@ export default function WorkloadPage() {
   });
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-4 sm:space-y-5 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202630] pb-3">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
-            <Database className="w-5 h-5 text-brand-teal" />
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-[#E8EAF0] flex items-center gap-2 font-mono">
+            <Database className="w-5 h-5 text-[#4E9F8E]" />
             <span>WORKLOAD QUERY CATALOG &amp; AST NORMALIZER</span>
           </h1>
-          <p className="text-xs text-graphite-200 mt-0.5">
+          <p className="text-xs text-[#929AA6] mt-0.5">
             SQLGlot AST query normalization, literal masking ($N), deterministic SHA-256 fingerprinting, and execution plans.
           </p>
         </div>
@@ -251,12 +251,12 @@ export default function WorkloadPage() {
 
       {/* SQL Normalizer Sandbox */}
       <div className="panel p-4 space-y-3">
-        <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
-          <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-brand-teal" />
+        <div className="flex items-center justify-between border-b border-[#202630] pb-2">
+          <h3 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase flex items-center gap-1.5 tracking-tight">
+            <Sparkles className="w-3.5 h-3.5 text-[#4E9F8E]" />
             <span>Interactive SQL Normalizer &amp; Masking Sandbox</span>
           </h3>
-          <span className="text-[10px] font-mono text-graphite-300">
+          <span className="text-[10px] font-mono text-[#626C79]">
             Literal Masking &bull; Anti-pattern Screening
           </span>
         </div>
@@ -266,20 +266,20 @@ export default function WorkloadPage() {
             value={rawSqlInput}
             onChange={(e) => setRawSqlInput(e.target.value)}
             rows={2}
-            className="w-full bg-graphite-950 border border-graphite-600 rounded p-2.5 text-xs font-mono text-graphite-50 focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
+            className="w-full bg-[#050607] border border-[#202630] rounded p-2.5 text-xs font-mono text-[#E8EAF0] focus:outline-none focus:border-[#364354] shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]"
             placeholder="Paste raw SQL to normalize and extract fingerprint..."
           />
 
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-graphite-300 font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span className="text-[11px] text-[#626C79] font-mono">
               Input passes through AST parser; values like &apos;admin@example.com&apos; and 42 are masked as $N.
             </span>
             <button
               onClick={handleNormalize}
               disabled={isNormalizing}
-              className="px-3 py-1 rounded bg-brand-teal hover:bg-brand-tealLight text-graphite-950 font-semibold text-xs font-mono transition-colors flex items-center gap-1.5 shadow-subtle"
+              className="px-3 py-1 rounded bg-[#12161C] hover:bg-[#191E25] border border-[#28323F] hover:border-[#364354] text-[#E8EAF0] font-medium text-xs font-mono transition-colors flex items-center gap-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] self-start sm:self-auto"
             >
-              <Sparkles className="w-3 h-3" />
+              <Sparkles className="w-3 h-3 text-[#4E9F8E]" />
               <span>{isNormalizing ? "Parsing AST..." : "Normalize &amp; Fingerprint"}</span>
             </button>
           </div>
@@ -291,29 +291,29 @@ export default function WorkloadPage() {
         {/* Left Column: Filterable Query List (5 cols) */}
         <div className="lg:col-span-5 panel p-4 space-y-3 flex flex-col max-h-[640px]">
           {/* Search & Filter Toolbar */}
-          <div className="space-y-2 border-b border-graphite-600 pb-3">
+          <div className="space-y-2 border-b border-[#202630] pb-3">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-graphite-300 absolute left-2.5 top-2" />
+              <Search className="w-3.5 h-3.5 text-[#626C79] absolute left-2.5 top-2" />
               <input
                 type="text"
                 placeholder="Search fingerprint, table, SQL..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1 bg-graphite-850 border border-graphite-600 rounded text-xs text-graphite-100 placeholder:text-graphite-300 focus:outline-none focus:border-brand-teal font-mono"
+                className="w-full pl-8 pr-3 py-1 bg-[#090B0E] border border-[#202630] rounded text-xs text-[#E8EAF0] placeholder:text-[#626C79] focus:outline-none focus:border-[#364354] font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]"
               />
             </div>
 
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-graphite-300 text-[11px]">Statement Type:</span>
-              <div className="flex items-center gap-1 bg-graphite-850 p-0.5 rounded border border-graphite-600 text-[10px]">
+              <span className="text-[#626C79] text-[11px]">Statement Type:</span>
+              <div className="flex items-center gap-1 bg-[#090B0E] p-0.5 rounded border border-[#202630] text-[10px]">
                 {["ALL", "SELECT", "UPDATE"].map((type) => (
                   <button
                     key={type}
                     onClick={() => setStatementFilter(type)}
-                    className={`px-1.5 py-0.5 rounded transition-colors ${
+                    className={`px-2 py-0.5 rounded transition-colors ${
                       statementFilter === type
-                        ? "bg-graphite-700 text-graphite-50 font-bold"
-                        : "text-graphite-300 hover:text-graphite-100"
+                        ? "bg-[#12161C] text-[#E8EAF0] border border-[#28323F] font-bold"
+                        : "text-[#626C79] hover:text-[#929AA6]"
                     }`}
                   >
                     {type}
@@ -331,25 +331,25 @@ export default function WorkloadPage() {
                 onClick={() => setSelectedQuery(q)}
                 className={`p-3 rounded border text-xs font-mono cursor-pointer transition-colors space-y-1.5 ${
                   selectedQuery.fingerprint === q.fingerprint
-                    ? "bg-graphite-800 border-brand-teal text-graphite-50"
-                    : "bg-graphite-850/60 border-graphite-600 hover:border-graphite-500 text-graphite-200"
+                    ? "bg-[#12161C] border-[#4E9F8E] text-[#E8EAF0] shadow-[0_2px_12px_rgba(0,0,0,0.7)]"
+                    : "bg-[#090B0E] border-[#202630] hover:border-[#28323F] text-[#929AA6]"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-brand-teal text-[11px]">{q.fingerprint}</span>
-                  <span className="text-[10px] px-1 py-0.2 rounded bg-graphite-750 text-graphite-300">
+                  <span className="font-bold text-[#CBD5E1] text-[11px]">{q.fingerprint}</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#0D1014] text-[#626C79] border border-[#202630]">
                     {q.statement_type}
                   </span>
                 </div>
 
-                <div className="text-[11px] text-graphite-100 font-sans line-clamp-2 leading-relaxed">
+                <div className="text-[11px] text-[#E8EAF0] font-sans line-clamp-2 leading-relaxed">
                   {q.canonical_sql}
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-graphite-300 pt-1 border-t border-graphite-700/60">
-                  <span>Impact: <strong className="text-graphite-100 tabular-nums">{q.total_time_pct.toFixed(1)}%</strong></span>
-                  <span>Mean: <strong className="text-graphite-100 tabular-nums">{q.mean_latency_ms.toFixed(1)} ms</strong></span>
-                  <span>Calls: <strong className="text-graphite-100 tabular-nums">{q.calls.toLocaleString()}</strong></span>
+                <div className="flex items-center justify-between text-[10px] text-[#626C79] pt-1 border-t border-[#202630]">
+                  <span>Impact: <strong className="text-[#E8EAF0] tabular-nums">{q.total_time_pct.toFixed(1)}%</strong></span>
+                  <span>Mean: <strong className="text-[#CBD5E1] tabular-nums">{q.mean_latency_ms.toFixed(1)} ms</strong></span>
+                  <span>Calls: <strong className="text-[#929AA6] tabular-nums">{q.calls.toLocaleString()}</strong></span>
                 </div>
               </div>
             ))}
@@ -360,28 +360,28 @@ export default function WorkloadPage() {
         <div className="lg:col-span-7 space-y-4">
           {/* Query Summary & Metadata */}
           <div className="panel p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+            <div className="flex items-center justify-between border-b border-[#202630] pb-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-brand-teal">
+                <span className="text-xs font-mono font-bold text-[#CBD5E1]">
                   Fingerprint: {selectedQuery.fingerprint}
                 </span>
                 <Badge variant="healthy">{selectedQuery.statement_type}</Badge>
               </div>
-              <span className="text-[10px] font-mono text-graphite-300">
+              <span className="text-[10px] font-mono text-[#626C79]">
                 Tables: {selectedQuery.tables.join(", ")}
               </span>
             </div>
 
             {/* SQL Viewer */}
             <div className="space-y-1">
-              <span className="text-[11px] font-mono text-graphite-300">Canonical Masked SQL:</span>
+              <span className="text-[11px] font-mono text-[#626C79]">Canonical Masked SQL:</span>
               <SQLViewer sql={selectedQuery.canonical_sql} isRedacted={true} />
             </div>
 
             {/* Anti-Patterns Screening Results */}
             {selectedQuery.antipatterns.length > 0 && (
               <div className="space-y-1.5 pt-2">
-                <span className="text-[11px] font-mono font-semibold text-status-warning flex items-center gap-1">
+                <span className="text-[11px] font-mono font-semibold text-[#FBBF24] flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
                   <span>Observed Performance Anti-Patterns:</span>
                 </span>
@@ -389,7 +389,7 @@ export default function WorkloadPage() {
                   {selectedQuery.antipatterns.map((ap, i) => (
                     <div
                       key={i}
-                      className="p-2 rounded bg-status-warningSurface border border-status-warningBorder text-xs text-status-warning font-mono"
+                      className="p-2 rounded bg-[#191408] border border-[#38290E] text-xs text-[#FBBF24] font-mono"
                     >
                       {ap}
                     </div>

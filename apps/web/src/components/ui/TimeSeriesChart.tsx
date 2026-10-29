@@ -75,25 +75,25 @@ export function TimeSeriesChart({
   return (
     <div className={`panel p-4 space-y-3 ${className}`}>
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-graphite-600/60 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#202630] pb-3">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-graphite-50">{title}</h3>
+            <h3 className="text-sm font-semibold text-[#E8EAF0] font-mono tracking-tight">{title}</h3>
             {isSimulated && (
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-graphite-750 text-graphite-200 border border-graphite-600">
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#12161C] text-[#929AA6] border border-[#202630]">
                 Simulated Baseline
               </span>
             )}
           </div>
-          <span className="text-[11px] text-graphite-300 font-mono">Source: {source}</span>
+          <span className="text-[11px] text-[#626C79] font-mono">Source: {source}</span>
         </div>
 
         {/* Legend / Filter buttons */}
-        <div className="flex items-center gap-1.5 bg-graphite-850 p-1 rounded border border-graphite-600/80 text-xs font-mono">
+        <div className="flex items-center gap-1.5 bg-[#090B0E] p-1 rounded border border-[#202630] text-xs font-mono">
           <button
             onClick={() => setActiveMetric("both")}
             className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
-              activeMetric === "both" ? "bg-graphite-700 text-graphite-50" : "text-graphite-300 hover:text-graphite-100"
+              activeMetric === "both" ? "bg-[#12161C] text-[#E8EAF0] border border-[#28323F]" : "text-[#626C79] hover:text-[#929AA6]"
             }`}
           >
             Dual View
@@ -101,43 +101,43 @@ export function TimeSeriesChart({
           <button
             onClick={() => setActiveMetric("throughput")}
             className={`px-2 py-0.5 rounded text-[11px] flex items-center gap-1 transition-colors ${
-              activeMetric === "throughput" ? "bg-graphite-700 text-brand-teal" : "text-graphite-300 hover:text-graphite-100"
+              activeMetric === "throughput" ? "bg-[#12161C] text-[#4E9F8E] border border-[#28323F]" : "text-[#626C79] hover:text-[#929AA6]"
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-teal inline-block" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#4E9F8E] inline-block" />
             Throughput (QPS)
           </button>
           <button
             onClick={() => setActiveMetric("latency")}
             className={`px-2 py-0.5 rounded text-[11px] flex items-center gap-1 transition-colors ${
-              activeMetric === "latency" ? "bg-graphite-700 text-status-info" : "text-graphite-300 hover:text-graphite-100"
+              activeMetric === "latency" ? "bg-[#12161C] text-[#CBD5E1] border border-[#28323F]" : "text-[#626C79] hover:text-[#929AA6]"
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-status-info inline-block" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#CBD5E1] inline-block" />
             Latency p95 (ms)
           </button>
         </div>
       </div>
 
       {/* Hover Readout Bar */}
-      <div className="flex items-center justify-between text-xs font-mono px-2 py-1 bg-graphite-850 rounded border border-graphite-600/50">
-        <span className="text-graphite-300">Time: <span className="text-graphite-100">{activePoint.time}</span></span>
+      <div className="flex items-center justify-between text-xs font-mono px-3 py-1 bg-[#090B0E] rounded border border-[#202630] shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+        <span className="text-[#626C79]">Time: <span className="text-[#E8EAF0]">{activePoint.time}</span></span>
         <div className="flex items-center gap-4">
           {(activeMetric === "both" || activeMetric === "throughput") && (
-            <span className="text-brand-teal">
-              QPS: <strong className="text-graphite-50 tabular-nums">{activePoint.throughputQps.toFixed(1)}</strong>
+            <span className="text-[#4E9F8E]">
+              QPS: <strong className="text-[#E8EAF0] tabular-nums font-bold">{activePoint.throughputQps.toFixed(1)}</strong>
             </span>
           )}
           {(activeMetric === "both" || activeMetric === "latency") && (
-            <span className="text-status-info">
-              p95: <strong className="text-graphite-50 tabular-nums">{activePoint.latencyP95Ms.toFixed(2)} ms</strong>
+            <span className="text-[#CBD5E1]">
+              p95: <strong className="text-[#E8EAF0] tabular-nums font-bold">{activePoint.latencyP95Ms.toFixed(2)} ms</strong>
             </span>
           )}
         </div>
       </div>
 
       {/* SVG Chart Viewport */}
-      <div className="relative w-full overflow-hidden">
+      <div className="relative w-full overflow-hidden bg-[#050607] rounded border border-[#202630]/60 p-1">
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           className="w-full h-auto cursor-crosshair select-none"
@@ -153,7 +153,7 @@ export function TimeSeriesChart({
                   y1={y}
                   x2={chartWidth - paddingX}
                   y2={y}
-                  stroke="#222A35"
+                  stroke="#161B22"
                   strokeDasharray="2 3"
                   strokeWidth="0.8"
                 />
@@ -163,7 +163,7 @@ export function TimeSeriesChart({
                     x={paddingX - 6}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[9px] fill-[#596573] font-mono"
+                    className="text-[9px] fill-[#626C79] font-mono"
                   >
                     {Math.round(ratio * maxQps)}
                   </text>
@@ -174,7 +174,7 @@ export function TimeSeriesChart({
                     x={chartWidth - paddingX + 6}
                     y={y + 3}
                     textAnchor="start"
-                    className="text-[9px] fill-[#596573] font-mono"
+                    className="text-[9px] fill-[#626C79] font-mono"
                   >
                     {(ratio * maxLatency).toFixed(0)}m
                   </text>
@@ -188,8 +188,8 @@ export function TimeSeriesChart({
             <path
               d={qpsPath}
               fill="none"
-              stroke="#66D9C0"
-              strokeWidth="2"
+              stroke="#4E9F8E"
+              strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -199,8 +199,8 @@ export function TimeSeriesChart({
             <path
               d={latencyPath}
               fill="none"
-              stroke="#38BDF8"
-              strokeWidth="2"
+              stroke="#CBD5E1"
+              strokeWidth="1.8"
               strokeDasharray={activeMetric === "both" ? "4 2" : undefined}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -230,7 +230,7 @@ export function TimeSeriesChart({
               y1={paddingY}
               x2={paddingX + hoverIndex * stepX}
               y2={paddingY + innerHeight}
-              stroke="#9AA5B1"
+              stroke="#929AA6"
               strokeWidth="1"
               strokeDasharray="2 2"
             />
@@ -239,7 +239,7 @@ export function TimeSeriesChart({
       </div>
 
       {/* Time Axis Labels */}
-      <div className="flex justify-between px-10 text-[10px] font-mono text-graphite-300">
+      <div className="flex justify-between px-10 text-[10px] font-mono text-[#626C79]">
         <span>{data[0]?.time}</span>
         <span>{data[Math.floor(data.length / 2)]?.time}</span>
         <span>{data[data.length - 1]?.time}</span>

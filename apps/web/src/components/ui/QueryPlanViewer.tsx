@@ -29,43 +29,43 @@ function RenderNode({ node, depth = 0 }: { node: PlanNode; depth?: number }) {
       <div
         className={`flex items-start gap-2 p-2 rounded text-xs font-mono border ${
           isWarning
-            ? "bg-status-warningSurface/60 border-status-warningBorder text-graphite-100"
-            : "bg-graphite-850/80 border-graphite-600/70 text-graphite-200"
+            ? "bg-[#191408] border-[#38290E] text-[#FBBF24]"
+            : "bg-[#0D1014] border-[#202630] text-[#E8EAF0] shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
         }`}
-        style={{ marginLeft: `${depth * 18}px` }}
+        style={{ marginLeft: `${depth * 16}px` }}
       >
-        {depth > 0 && <CornerDownRight className="w-3.5 h-3.5 text-graphite-300 shrink-0 mt-0.5" />}
+        {depth > 0 && <CornerDownRight className="w-3.5 h-3.5 text-[#626C79] shrink-0 mt-0.5" />}
         
         <div className="flex-1 space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className={`font-semibold ${isWarning ? "text-status-warning" : "text-graphite-50"}`}>
+            <span className={`font-semibold ${isWarning ? "text-[#FBBF24]" : "text-[#E8EAF0]"}`}>
               {node.nodeType}
             </span>
             {node.relationName && (
-              <span className="text-graphite-100">on <strong className="text-brand-teal">{node.relationName}</strong></span>
+              <span className="text-[#929AA6]">on <strong className="text-[#CBD5E1] font-semibold">{node.relationName}</strong></span>
             )}
             {node.indexName && (
-              <span className="text-graphite-300">using <em className="text-status-info not-italic">{node.indexName}</em></span>
+              <span className="text-[#626C79]">using <em className="text-[#4E9F8E] not-italic">{node.indexName}</em></span>
             )}
             {isWarning && (
-              <span className="inline-flex items-center gap-1 text-[10px] text-status-warning px-1 rounded bg-status-warningBorder/40">
+              <span className="inline-flex items-center gap-1 text-[10px] text-[#FBBF24] px-1.5 py-0.2 rounded bg-[#38290E]/50 border border-[#38290E]">
                 <AlertTriangle className="w-2.5 h-2.5" />
                 <span>Full Table Scan</span>
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] text-graphite-300">
-            <span>Cost: <strong className="text-graphite-100 tabular-nums">{node.totalCost.toFixed(1)}</strong></span>
-            <span>Est Rows: <strong className="text-graphite-100 tabular-nums">{node.planRows}</strong></span>
+          <div className="flex items-center gap-3 text-[11px] text-[#626C79]">
+            <span>Cost: <strong className="text-[#CBD5E1] tabular-nums font-mono">{node.totalCost.toFixed(1)}</strong></span>
+            <span>Est Rows: <strong className="text-[#CBD5E1] tabular-nums font-mono">{node.planRows}</strong></span>
             {node.actualRows !== undefined && (
-              <span>Actual Rows: <strong className="text-graphite-100 tabular-nums">{node.actualRows}</strong></span>
+              <span>Actual Rows: <strong className="text-[#CBD5E1] tabular-nums font-mono">{node.actualRows}</strong></span>
             )}
           </div>
 
           {node.filter && (
-            <div className="text-[10px] text-graphite-300 font-mono">
-              Filter: <code className="text-graphite-200">{node.filter}</code>
+            <div className="text-[10px] text-[#626C79] font-mono">
+              Filter: <code className="text-[#929AA6] bg-[#050607] px-1 py-0.5 rounded border border-[#202630]">{node.filter}</code>
             </div>
           )}
         </div>
@@ -85,11 +85,11 @@ function RenderNode({ node, depth = 0 }: { node: PlanNode; depth?: number }) {
 export function QueryPlanViewer({ plan, className = "" }: QueryPlanViewerProps) {
   return (
     <div className={`panel p-3.5 space-y-2 ${className}`}>
-      <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
-        <h4 className="text-xs font-semibold text-graphite-50 flex items-center gap-1.5 font-mono">
+      <div className="flex items-center justify-between border-b border-[#202630] pb-2">
+        <h4 className="text-xs font-semibold text-[#E8EAF0] flex items-center gap-1.5 font-mono">
           <span>PostgreSQL EXPLAIN Execution Tree</span>
         </h4>
-        <span className="text-[10px] font-mono text-graphite-300">Static AST / Cost Tree Analysis</span>
+        <span className="text-[10px] font-mono text-[#626C79]">Static AST / Cost Tree Analysis</span>
       </div>
 
       <div className="space-y-1 overflow-x-auto py-1">

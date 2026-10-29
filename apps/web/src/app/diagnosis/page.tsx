@@ -160,36 +160,38 @@ export default function DiagnosisPage() {
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202630] pb-3">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
-            <AlertTriangle className="w-5 h-5 text-status-warning" />
-            <span>DATABASE BOTTLENECK DIAGNOSIS &amp; OPTIMIZATION</span>
+          <h1 className="text-sm font-bold tracking-tight text-[#E8EAF0] flex items-center gap-2 font-mono uppercase">
+            <AlertTriangle className="w-4 h-4 text-[#FBBF24]" />
+            <span>Database Bottleneck Diagnosis &amp; Root Cause Analysis</span>
           </h1>
-          <p className="text-xs text-graphite-200 mt-0.5">
-            Rule-backed performance diagnostics with observed evidence, root cause analysis, and verified DDL recommendations.
+          <p className="text-xs text-[#929AA6] mt-0.5 font-sans">
+            Rule-backed performance heuristics with observed evidence, cost attribution, and verified DDL remediations.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Badge variant="warning">3 Active Findings</Badge>
-          <Badge variant="simulated">SIMULATED DEMO RULES</Badge>
-          <Badge variant="healthy">Heuristics Engine v2.2</Badge>
+          <Badge variant="simulated">SIMULATED ENGINE</Badge>
+          <span className="text-[10px] font-mono text-[#626C79] bg-[#0D1014] px-2 py-0.5 rounded border border-[#202630]">
+            Heuristics v2.2
+          </span>
         </div>
       </div>
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 text-xs font-mono">
-        <span className="text-graphite-300">Filter Severity:</span>
-        <div className="flex items-center gap-1 bg-graphite-850 p-1 rounded border border-graphite-600">
+        <span className="text-[#626C79]">Severity Filter:</span>
+        <div className="flex items-center gap-1 bg-[#090B0E] p-0.5 rounded border border-[#202630]">
           {["ALL", "CRITICAL", "HIGH", "MEDIUM"].map((lvl) => (
             <button
               key={lvl}
               onClick={() => setSelectedFilter(lvl)}
-              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+              className={`px-2.5 py-1 rounded text-[11px] transition-colors ${
                 selectedFilter === lvl
-                  ? "bg-graphite-700 text-graphite-50 font-bold"
-                  : "text-graphite-300 hover:text-graphite-100"
+                  ? "bg-[#12161C] text-[#E8EAF0] font-semibold border border-[#28323F] shadow-sm"
+                  : "text-[#929AA6] hover:text-[#E8EAF0] hover:bg-[#12161C]/50"
               }`}
             >
               {lvl}
@@ -201,19 +203,19 @@ export default function DiagnosisPage() {
       {/* Main Grid: Findings List + Detail Evidence */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Column: Finding Cards (5 cols) */}
-        <div className="lg:col-span-5 space-y-2.5">
+        <div className="lg:col-span-5 space-y-2">
           {filteredBottlenecks.map((item) => (
             <div
               key={item.id}
               onClick={() => setSelectedItem(item)}
-              className={`panel p-4 space-y-2 cursor-pointer transition-colors border ${
+              className={`p-3.5 space-y-2 cursor-pointer transition-all rounded border ${
                 selectedItem.id === item.id
-                  ? "border-brand-teal bg-graphite-800"
-                  : "border-graphite-600 hover:border-graphite-500 bg-graphite-850/80"
+                  ? "border-[#4E9F8E] bg-[#12161C] shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
+                  : "border-[#202630] hover:border-[#28323F] bg-[#0D1014] hover:bg-[#12161C]/60"
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-graphite-300 uppercase">
+                <span className="text-[10px] font-mono font-semibold text-[#626C79] uppercase">
                   {item.ruleId}
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -229,46 +231,46 @@ export default function DiagnosisPage() {
                     {item.severity.toUpperCase()}
                   </Badge>
                   <span
-                    className={`text-[9px] font-mono px-1 py-0.2 rounded border ${
+                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
                       item.verificationStatus === "TESTED_IN_SANDBOX"
-                        ? "bg-status-successSurface text-status-success border-status-successBorder"
-                        : "bg-graphite-700 text-graphite-300 border-graphite-600"
+                        ? "bg-[#0A1612] text-[#34D399] border-[#17382B]"
+                        : "bg-[#090B0E] text-[#626C79] border-[#202630]"
                     }`}
                   >
-                    {item.verificationStatus}
+                    {item.verificationStatus === "TESTED_IN_SANDBOX" ? "SANDBOX VERIFIED" : "UNVERIFIED"}
                   </span>
                 </div>
               </div>
 
-              <h3 className="text-xs font-semibold text-graphite-50 leading-snug">
+              <h3 className="text-xs font-semibold text-[#E8EAF0] leading-snug">
                 {item.title}
               </h3>
 
-              <p className="text-[11px] text-graphite-200 line-clamp-2 leading-relaxed">
+              <p className="text-[11px] text-[#929AA6] line-clamp-2 leading-relaxed font-sans">
                 {item.observation}
               </p>
 
-              <div className="flex items-center justify-between text-[10px] font-mono text-graphite-300 pt-1.5 border-t border-graphite-700/60">
-                <span>Relation: <strong className="text-brand-teal">{item.evidence.relation}</strong></span>
-                <span>Impact: <strong className="text-graphite-50 tabular-nums">{item.evidence.totalImpactPct}%</strong></span>
+              <div className="flex items-center justify-between text-[10px] font-mono text-[#626C79] pt-2 border-t border-[#191E25]">
+                <span>Relation: <strong className="text-[#CBD5E1]">{item.evidence.relation}</strong></span>
+                <span>Impact: <strong className="text-[#E8EAF0] tabular-nums font-bold">{item.evidence.totalImpactPct}%</strong></span>
               </div>
             </div>
           ))}
         </div>
 
         {/* Right Column: Deep Diagnostic Evidence & Proposed Action (7 cols) */}
-        <div className="lg:col-span-7 panel p-5 space-y-4">
+        <div className="lg:col-span-7 bg-[#0D1014] border border-[#202630] rounded p-5 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.7)]">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-3">
+          <div className="flex items-center justify-between border-b border-[#202630] pb-3">
             <div>
-              <span className="text-[10px] font-mono text-graphite-300 uppercase block">
-                Diagnostic Finding &bull; {selectedItem.ruleId}
+              <span className="text-[10px] font-mono text-[#626C79] uppercase tracking-wider block">
+                Evidence Dossier &bull; {selectedItem.ruleId}
               </span>
-              <h2 className="text-sm font-bold text-graphite-50">{selectedItem.title}</h2>
+              <h2 className="text-sm font-bold text-[#E8EAF0]">{selectedItem.title}</h2>
             </div>
             <Link
               href="/experiments"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand-teal hover:bg-brand-tealLight text-graphite-950 font-semibold text-xs font-mono transition-colors shadow-subtle"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#4E9F8E] hover:bg-[#5bb8a4] text-[#050607] font-semibold text-xs font-mono transition-colors shadow-sm"
             >
               <Play className="w-3 h-3 fill-current" />
               <span>Verify in Sandbox</span>
@@ -276,39 +278,39 @@ export default function DiagnosisPage() {
           </div>
 
           {/* Observed Evidence */}
-          <div className="p-3 rounded bg-graphite-850 border border-graphite-600 space-y-1.5 text-xs font-mono">
-            <span className="font-semibold text-graphite-100 flex items-center gap-1.5 text-[11px]">
-              <Database className="w-3.5 h-3.5 text-brand-teal" />
+          <div className="p-3.5 rounded bg-[#090B0E] border border-[#202630] space-y-2 text-xs font-mono">
+            <span className="font-semibold text-[#CBD5E1] flex items-center gap-1.5 text-[11px]">
+              <Database className="w-3.5 h-3.5 text-[#4E9F8E]" />
               <span>Observed Workload Evidence:</span>
             </span>
-            <p className="text-graphite-200 text-[11px] font-sans leading-relaxed">
+            <p className="text-[#929AA6] text-[11px] font-sans leading-relaxed">
               {selectedItem.observation}
             </p>
-            <div className="grid grid-cols-3 gap-2 pt-1.5 border-t border-graphite-700/60 text-[10px] text-graphite-300">
-              <div>Calls: <strong className="text-graphite-100 tabular-nums">{selectedItem.evidence.calls.toLocaleString()}</strong></div>
-              <div>Mean Latency: <strong className="text-graphite-100 tabular-nums">{selectedItem.evidence.meanDurationMs} ms</strong></div>
-              <div>Total Time %: <strong className="text-graphite-100 tabular-nums">{selectedItem.evidence.totalImpactPct}%</strong></div>
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#191E25] text-[10px] text-[#626C79]">
+              <div>Calls: <strong className="text-[#E8EAF0] tabular-nums">{selectedItem.evidence.calls.toLocaleString()}</strong></div>
+              <div>Mean Latency: <strong className="text-[#E8EAF0] tabular-nums">{selectedItem.evidence.meanDurationMs} ms</strong></div>
+              <div>Time Share: <strong className="text-[#E8EAF0] tabular-nums font-bold">{selectedItem.evidence.totalImpactPct}%</strong></div>
             </div>
           </div>
 
           {/* Confirmed Findings vs Likely Causes */}
-          <div className="space-y-2 text-xs">
+          <div className="space-y-3 text-xs">
             <div className="space-y-1">
-              <span className="font-semibold text-status-success font-mono text-[11px] flex items-center gap-1">
+              <span className="font-semibold text-[#34D399] font-mono text-[11px] flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Confirmed Ground Truth Finding:</span>
+                <span>Verified Execution Plan Finding:</span>
               </span>
-              <p className="p-2.5 rounded bg-status-successSurface/40 border border-status-successBorder text-graphite-100 font-mono text-[11px]">
+              <div className="p-3 rounded bg-[#0A1612] border border-[#17382B] text-[#E8EAF0] font-mono text-[11px]">
                 {selectedItem.confirmedFinding}
-              </p>
+              </div>
             </div>
 
-            <div className="space-y-1 pt-1">
-              <span className="font-semibold text-graphite-300 font-mono text-[11px] flex items-center gap-1">
-                <Info className="w-3.5 h-3.5 text-status-info" />
-                <span>Likely Root Causes:</span>
+            <div className="space-y-1">
+              <span className="font-semibold text-[#929AA6] font-mono text-[11px] flex items-center gap-1.5">
+                <Info className="w-3.5 h-3.5 text-[#626C79]" />
+                <span>Probable Root Causes:</span>
               </span>
-              <ul className="list-disc list-inside space-y-0.5 text-graphite-200 text-[11px]">
+              <ul className="list-disc list-inside space-y-1 text-[#929AA6] text-[11px] bg-[#090B0E] p-3 rounded border border-[#202630]">
                 {selectedItem.likelyCauses.map((cause, i) => (
                   <li key={i}>{cause}</li>
                 ))}
@@ -317,42 +319,42 @@ export default function DiagnosisPage() {
           </div>
 
           {/* Proposed Action & DDL */}
-          <div className="p-4 rounded bg-graphite-950 border border-graphite-600 space-y-3 text-xs">
+          <div className="p-4 rounded bg-[#090B0E] border border-[#202630] space-y-3 text-xs">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-graphite-50 font-mono text-xs flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-brand-teal" />
-                <span>Proposed Action &amp; Recommended DDL</span>
+              <span className="font-bold text-[#E8EAF0] font-mono text-xs flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#4E9F8E]" />
+                <span>Recommended Remediation &amp; DDL</span>
               </span>
               {selectedItem.proposedAction.ddl && (
                 <button
                   onClick={() => handleCopyDdl(selectedItem.proposedAction.ddl || "")}
-                  className="px-2 py-0.5 rounded bg-graphite-800 hover:bg-graphite-700 text-graphite-200 text-[11px] font-mono flex items-center gap-1"
+                  className="px-2.5 py-1 rounded bg-[#12161C] hover:bg-[#191E25] text-[#CBD5E1] text-[11px] font-mono flex items-center gap-1 border border-[#202630] transition-colors"
                 >
-                  <Copy className="w-3 h-3" />
-                  <span>{copiedDdl ? "Copied DDL" : "Copy DDL"}</span>
+                  <Copy className="w-3 h-3 text-[#929AA6]" />
+                  <span>{copiedDdl ? "Copied" : "Copy DDL"}</span>
                 </button>
               )}
             </div>
 
-            <p className="text-graphite-200 text-[11px] leading-relaxed">
+            <p className="text-[#929AA6] text-[11px] leading-relaxed font-sans">
               {selectedItem.proposedAction.description}
             </p>
 
             {selectedItem.proposedAction.ddl && (
-              <pre className="p-2.5 rounded bg-graphite-900 border border-graphite-700 font-mono text-xs text-brand-teal overflow-x-auto whitespace-pre-wrap">
+              <pre className="p-3 rounded bg-[#050607] border border-[#202630] font-mono text-xs text-[#E8EAF0] overflow-x-auto whitespace-pre-wrap shadow-inner">
                 {selectedItem.proposedAction.ddl}
               </pre>
             )}
 
             {/* Safety Warning */}
-            <div className="p-2.5 rounded bg-status-warningSurface border border-status-warningBorder text-[11px] text-status-warning font-mono space-y-0.5">
-              <span className="font-bold block uppercase text-[10px]">Production Safety Boundary:</span>
-              <p>{selectedItem.proposedAction.safetyWarning}</p>
+            <div className="p-3 rounded bg-[#181308] border border-[#38290E] text-[11px] text-[#FBBF24] font-mono space-y-1">
+              <span className="font-bold block uppercase text-[10px] tracking-wider text-[#FCD34D]">Production Safety Constraint:</span>
+              <p className="text-[11px] leading-relaxed">{selectedItem.proposedAction.safetyWarning}</p>
             </div>
 
             {/* Trade-offs */}
-            <div className="space-y-1 text-[11px] text-graphite-300">
-              <span className="font-semibold text-graphite-100 block font-mono">Known Trade-offs:</span>
+            <div className="space-y-1 text-[11px] text-[#929AA6]">
+              <span className="font-semibold text-[#CBD5E1] block font-mono text-[11px]">Known Trade-offs:</span>
               <ul className="list-disc list-inside space-y-0.5">
                 {selectedItem.proposedAction.tradeoffs.map((to, i) => (
                   <li key={i}>{to}</li>

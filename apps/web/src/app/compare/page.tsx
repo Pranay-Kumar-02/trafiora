@@ -15,8 +15,8 @@ import {
   TrendingUp,
   XCircle,
 } from "lucide-react";
-import { Badge } from "../../components/ui/Badge";
-import { apiClient } from "../../lib/api-client";
+import { Badge } from "@/components/ui/Badge";
+import { apiClient } from "@/lib/api-client";
 
 interface ComparisonRow {
   metric: string;
@@ -27,7 +27,36 @@ interface ComparisonRow {
   significance: string;
 }
 
+interface ExperimentItem {
+  id: string;
+  name: string;
+  status: string;
+  is_baseline: boolean;
+  baseline_id?: string | null;
+  outcome_classification?: string;
+  repetitions_completed?: number;
+  repetitions_planned?: number;
+  connection_id?: string;
+  scenario_id?: string;
+  summary_metrics?: {
+    tps?: number;
+    throughput_qps_avg?: number;
+    latency_p50_ms?: number;
+    latency_p90_ms?: number;
+    latency_p95_ms?: number;
+    latency_p99_ms?: number;
+    mean_p95?: number;
+    buffer_hit_ratio?: number;
+    measurement_source?: string;
+    is_simulated?: boolean;
+    simulation_reason?: string;
+    confidence_interval_95?: [number, number];
+    coefficient_of_variation?: number;
+  };
+}
+
 const SIMULATED_COMPARISON_ROWS: ComparisonRow[] = [
+
   {
     metric: "Latency (p95)",
     baseline: "10.05 ms",
@@ -79,13 +108,13 @@ const SIMULATED_COMPARISON_ROWS: ComparisonRow[] = [
 ];
 
 export default function ComparePage() {
-  const [experiments, setExperiments] = useState<any[]>([]);
+  const [experiments, setExperiments] = useState<ExperimentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     apiClient
-      .get<any[]>("/experiments?limit=20")
-      .then((data) => {
+      .get<ExperimentItem[]>("/experiments?limit=20")
+      .then((data: ExperimentItem[]) => {
         if (Array.isArray(data)) {
           setExperiments(data);
         }
@@ -176,13 +205,13 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202630] pb-3">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
-            <GitCompare className="w-5 h-5 text-brand-teal" />
-            <span>BASELINE VS CANDIDATE A/B PERFORMANCE COMPARISON</span>
+          <h1 className="text-sm font-bold tracking-tight text-[#E8EAF0] flex items-center gap-2 font-mono uppercase">
+            <GitCompare className="w-4 h-4 text-[#4E9F8E]" />
+            <span>Baseline vs Candidate A/B Performance Evaluation</span>
           </h1>
-          <p className="text-xs text-graphite-200 mt-0.5">
+          <p className="text-xs text-[#929AA6] mt-0.5 font-sans">
             Statistical regression evaluation comparing latency percentiles, throughput retention, and buffer efficiency.
           </p>
         </div>
@@ -195,9 +224,9 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
           )}
           <button
             onClick={handleExportMarkdown}
-            className="flex items-center gap-1.5 px-3 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-500 text-xs font-mono text-graphite-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#12161C] hover:bg-[#191E25] border border-[#202630] text-xs font-mono text-[#CBD5E1] transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-brand-teal" />
+            <Download className="w-3.5 h-3.5 text-[#4E9F8E]" />
             <span>Export Report (.md)</span>
           </button>
         </div>
@@ -206,22 +235,22 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
       {/* Outcome Verdict Banner */}
       {hasRealComparison && candidate ? (
         <div
-          className={`panel p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+          className={`p-4 rounded border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-[0_4px_16px_rgba(0,0,0,0.6)] ${
             candidate.outcome_classification === "MEASURED_IMPROVEMENT"
-              ? "border-status-successBorder bg-status-successSurface/30"
+              ? "border-[#17382B] bg-[#0A1612]"
               : candidate.outcome_classification === "REGRESSION_DETECTED"
-              ? "border-status-errorBorder bg-status-errorSurface/30"
-              : "border-status-warningBorder bg-status-warningSurface/30"
+              ? "border-[#441616] bg-[#180A0A]"
+              : "border-[#38290E] bg-[#181308]"
           }`}
         >
           <div className="flex items-start gap-3">
             <div
               className={`p-2 rounded shrink-0 mt-0.5 ${
                 candidate.outcome_classification === "MEASURED_IMPROVEMENT"
-                  ? "bg-status-successSurface border border-status-successBorder text-status-success"
+                  ? "bg-[#0A1612] border border-[#17382B] text-[#34D399]"
                   : candidate.outcome_classification === "REGRESSION_DETECTED"
-                  ? "bg-status-errorSurface border border-status-errorBorder text-status-error"
-                  : "bg-status-warningSurface border border-status-warningBorder text-status-warning"
+                  ? "bg-[#180A0A] border border-[#441616] text-[#FB7185]"
+                  : "bg-[#181308] border border-[#38290E] text-[#FBBF24]"
               }`}
             >
               {candidate.outcome_classification === "MEASURED_IMPROVEMENT" ? (
@@ -232,11 +261,11 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
             </div>
             <div className="space-y-0.5 text-xs">
               <div className="flex items-center gap-2">
-                <span className="font-bold font-mono uppercase text-xs text-graphite-50">
+                <span className="font-bold font-mono uppercase text-xs text-[#E8EAF0]">
                   Statistical Outcome: {candidate.outcome_classification}
                 </span>
-                <span className="px-1.5 py-0.2 rounded bg-graphite-800 text-graphite-200 border border-graphite-600 font-mono text-[10px]">
-                  K = {candidate.repetitions_completed} Repetitions &bull;{" "}
+                <span className="px-1.5 py-0.5 rounded bg-[#090B0E] text-[#929AA6] border border-[#202630] font-mono text-[10px]">
+                  K = {candidate.repetitions_completed} Reps &bull;{" "}
                   {candidate.summary_metrics?.measurement_source === "WIRE_EMULATOR_SANDBOX"
                     ? "EMULATOR (SANDBOX)"
                     : candidate.summary_metrics?.is_simulated
@@ -244,31 +273,31 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
                     : candidate.summary_metrics?.measurement_source || "MEASURED"}
                 </span>
               </div>
-              <p className="text-graphite-200 leading-relaxed text-[11px]">
+              <p className="text-[#929AA6] leading-relaxed text-[11px] font-sans">
                 Comparing Candidate ({candidate.name}) against Baseline ({baseline?.name}). Target:{" "}
-                {candidate.connection_id}.
+                <span className="font-mono text-[#CBD5E1]">{candidate.connection_id}</span>.
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="panel p-4 border-status-successBorder bg-status-successSurface/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="p-4 rounded border border-[#17382B] bg-[#0A1612] flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded bg-status-successSurface border border-status-successBorder text-status-success shrink-0 mt-0.5">
+            <div className="p-2 rounded bg-[#0A1612] border border-[#17382B] text-[#34D399] shrink-0 mt-0.5">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div className="space-y-0.5 text-xs">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-status-success font-mono uppercase text-xs">
+                <span className="font-bold text-[#34D399] font-mono uppercase text-xs">
                   Reference Outcome: MEASURED_IMPROVEMENT
                 </span>
-                <span className="px-1.5 py-0.2 rounded bg-graphite-800 text-graphite-200 border border-graphite-600 font-mono text-[10px]">
+                <span className="px-1.5 py-0.5 rounded bg-[#090B0E] text-[#929AA6] border border-[#202630] font-mono text-[10px]">
                   SIMULATED REFERENCE MODEL &bull; K = 5 Reps
                 </span>
               </div>
-              <p className="text-graphite-200 leading-relaxed text-[11px]">
+              <p className="text-[#929AA6] leading-relaxed text-[11px] font-sans">
                 Demonstration baseline vs candidate comparison. Launch real benchmark experiments from the{" "}
-                <Link href="/experiments" className="text-brand-teal underline">
+                <Link href="/experiments" className="text-[#4E9F8E] underline hover:text-[#5bb8a4]">
                   Experiments page
                 </Link>{" "}
                 to populate real distribution matrices.
@@ -279,19 +308,19 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
       )}
 
       {/* Side-by-Side Comparison Metric Table */}
-      <div className="panel p-4 space-y-3">
-        <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+      <div className="bg-[#0D1014] border border-[#202630] rounded p-4 space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.7)]">
+        <div className="flex items-center justify-between border-b border-[#202630] pb-2">
           <div className="flex items-center gap-2">
-            <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+            <h3 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase">
               Comparative Performance Metrics Matrix
             </h3>
             {!hasRealComparison && (
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#090B0E] text-[#626C79] border border-[#202630]">
                 SIMULATED DATASET
               </span>
             )}
           </div>
-          <span className="text-[10px] font-mono text-graphite-300">
+          <span className="text-[10px] font-mono text-[#626C79]">
             {hasRealComparison ? "Real Benchmark Evidence" : "Baseline (Pre-Opt) vs Candidate (With Index)"}
           </span>
         </div>
@@ -299,7 +328,7 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
             <thead>
-              <tr className="border-b border-graphite-600 text-[10px] text-graphite-300 uppercase">
+              <tr className="border-b border-[#202630] text-[10px] text-[#626C79] uppercase">
                 <th className="py-2.5 px-3">Performance Dimension</th>
                 <th className="py-2.5 px-3 text-right">Baseline (Pre-Opt)</th>
                 <th className="py-2.5 px-3 text-right">Candidate (Optimized)</th>
@@ -307,16 +336,16 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
                 <th className="py-2.5 px-3">Statistical Significance</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-graphite-600/60">
+            <tbody className="divide-y divide-[#191E25]">
               {displayRows.map((row, idx) => (
-                <tr key={idx} className="hover:bg-graphite-850/60 transition-colors">
-                  <td className="py-2.5 px-3 font-semibold text-graphite-100 font-sans">
+                <tr key={idx} className="hover:bg-[#12161C]/50 transition-colors">
+                  <td className="py-2.5 px-3 font-semibold text-[#E8EAF0] font-sans">
                     {row.metric}
                   </td>
-                  <td className="py-2.5 px-3 text-right text-graphite-300 tabular-nums">
+                  <td className="py-2.5 px-3 text-right text-[#929AA6] tabular-nums">
                     {row.baseline}
                   </td>
-                  <td className="py-2.5 px-3 text-right font-bold text-brand-teal tabular-nums">
+                  <td className="py-2.5 px-3 text-right font-bold text-[#CBD5E1] tabular-nums">
                     {row.candidate}
                   </td>
                   <td className="py-2.5 px-3 text-right">
@@ -324,16 +353,16 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
                       className={`px-1.5 py-0.5 rounded text-[11px] font-bold tabular-nums border ${
                         (!row.isPositiveGood && row.delta.startsWith("-")) ||
                         (row.isPositiveGood && row.delta.startsWith("+"))
-                          ? "bg-status-successSurface text-status-success border-status-successBorder"
+                          ? "bg-[#0A1612] text-[#34D399] border-[#17382B]"
                           : row.delta === "—"
-                          ? "bg-graphite-800 text-graphite-300 border-graphite-700"
-                          : "bg-status-errorSurface text-status-error border-status-errorBorder"
+                          ? "bg-[#090B0E] text-[#626C79] border-[#202630]"
+                          : "bg-[#180A0A] text-[#FB7185] border-[#441616]"
                       }`}
                     >
                       {row.delta}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-graphite-200 text-[11px] font-sans">
+                  <td className="py-2.5 px-3 text-[#929AA6] text-[11px] font-sans">
                     {row.significance}
                   </td>
                 </tr>
@@ -346,30 +375,30 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
       {/* Bottom Grid: Latency Distribution CDF Curve & Repetition Evidence */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Latency CDF Curve Visualization */}
-        <div className="panel p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
-            <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+        <div className="bg-[#0D1014] border border-[#202630] rounded p-4 space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.7)]">
+          <div className="flex items-center justify-between border-b border-[#202630] pb-2">
+            <h3 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase">
               Cumulative Distribution Function (Latency CDF)
             </h3>
-            <span className="text-[10px] font-mono text-graphite-300">
+            <span className="text-[10px] font-mono text-[#626C79]">
               {hasRealComparison ? "Measured Distribution" : "Simulated Model (N = 2,500)"}
             </span>
           </div>
 
           <div className="space-y-2">
-            <div className="w-full h-44 bg-graphite-950 rounded border border-graphite-600 p-2 flex items-center justify-center">
+            <div className="w-full h-44 bg-[#050607] rounded border border-[#202630] p-2 flex items-center justify-center shadow-inner">
               <svg viewBox="0 0 360 140" className="w-full h-full select-none">
-                <line x1="30" y1="120" x2="340" y2="120" stroke="#222A35" strokeWidth="1" />
-                <line x1="30" y1="10" x2="30" y2="120" stroke="#222A35" strokeWidth="1" />
+                <line x1="30" y1="120" x2="340" y2="120" stroke="#161B22" strokeWidth="1" />
+                <line x1="30" y1="10" x2="30" y2="120" stroke="#161B22" strokeWidth="1" />
 
-                <text x="24" y="123" textAnchor="end" className="text-[8px] fill-[#596573] font-mono">0.0</text>
-                <text x="24" y="68" textAnchor="end" className="text-[8px] fill-[#596573] font-mono">0.5</text>
-                <text x="24" y="15" textAnchor="end" className="text-[8px] fill-[#596573] font-mono">1.0</text>
+                <text x="24" y="123" textAnchor="end" className="text-[8px] fill-[#626C79] font-mono">0.0</text>
+                <text x="24" y="68" textAnchor="end" className="text-[8px] fill-[#626C79] font-mono">0.5</text>
+                <text x="24" y="15" textAnchor="end" className="text-[8px] fill-[#626C79] font-mono">1.0</text>
 
                 <path
                   d="M 30 120 C 70 120, 100 80, 160 50 C 220 25, 280 15, 340 10"
                   fill="none"
-                  stroke="#9AA5B1"
+                  stroke="#626C79"
                   strokeWidth="2"
                   strokeDasharray="3 3"
                 />
@@ -377,20 +406,20 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
                 <path
                   d="M 30 120 C 60 120, 80 50, 120 25 C 180 12, 240 10, 340 10"
                   fill="none"
-                  stroke="#66D9C0"
+                  stroke="#4E9F8E"
                   strokeWidth="2.5"
                 />
 
                 <g transform="translate(180, 80)">
-                  <line x1="0" y1="5" x2="15" y2="5" stroke="#9AA5B1" strokeWidth="2" strokeDasharray="3 3" />
-                  <text x="20" y="8" className="text-[8px] fill-[#9AA5B1] font-mono">Baseline CDF</text>
-                  <line x1="0" y1="18" x2="15" y2="18" stroke="#66D9C0" strokeWidth="2.5" />
-                  <text x="20" y="21" className="text-[8px] fill-[#66D9C0] font-mono">{"Candidate CDF (Shift Left = Faster)"}</text>
+                  <line x1="0" y1="5" x2="15" y2="5" stroke="#626C79" strokeWidth="2" strokeDasharray="3 3" />
+                  <text x="20" y="8" className="text-[8px] fill-[#929AA6] font-mono">Baseline CDF</text>
+                  <line x1="0" y1="18" x2="15" y2="18" stroke="#4E9F8E" strokeWidth="2.5" />
+                  <text x="20" y="21" className="text-[8px] fill-[#4E9F8E] font-mono">{"Candidate CDF (Shift Left = Faster)"}</text>
                 </g>
               </svg>
             </div>
 
-            <div className="flex justify-between px-6 text-[10px] font-mono text-graphite-300">
+            <div className="flex justify-between px-6 text-[10px] font-mono text-[#626C79]">
               <span>0 ms</span>
               <span>10 ms</span>
               <span>20 ms</span>
@@ -400,40 +429,40 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
         </div>
 
         {/* Repetition Variability & Confidence Evidence */}
-        <div className="panel p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
-            <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+        <div className="bg-[#0D1014] border border-[#202630] rounded p-4 space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.7)]">
+          <div className="flex items-center justify-between border-b border-[#202630] pb-2">
+            <h3 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase">
               Repetition Variability &amp; Confidence Interval
             </h3>
-            <span className="text-[10px] font-mono text-graphite-300">
+            <span className="text-[10px] font-mono text-[#626C79]">
               {hasRealComparison && candidate ? `K = ${candidate.repetitions_completed} Runs` : "Simulated Model (K = 5)"}
             </span>
           </div>
 
           <div className="space-y-2 text-xs font-mono">
-            <div className="p-2.5 rounded bg-graphite-850 border border-graphite-600 space-y-1">
-              <span className="text-[10px] text-graphite-300 block uppercase">Candidate 95% Confidence Interval</span>
+            <div className="p-2.5 rounded bg-[#090B0E] border border-[#202630] space-y-1">
+              <span className="text-[10px] text-[#626C79] block uppercase">Candidate 95% Confidence Interval</span>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-brand-teal tabular-nums">
+                <span className="text-sm font-bold text-[#E8EAF0] tabular-nums">
                   {candidate?.summary_metrics?.confidence_interval_95
                     ? `[${candidate.summary_metrics.confidence_interval_95[0].toFixed(2)} ms, ${candidate.summary_metrics.confidence_interval_95[1].toFixed(2)} ms]`
                     : "[6.85 ms, 7.55 ms] [SIM]"}
                 </span>
-                <span className="text-[11px] text-status-success font-sans">
+                <span className="text-[11px] text-[#34D399] font-sans">
                   {hasRealComparison ? "Measured Bounds" : "Demonstration Bounds"}
                 </span>
               </div>
             </div>
 
-            <div className="p-2.5 rounded bg-graphite-850 border border-graphite-600 space-y-1">
-              <span className="text-[10px] text-graphite-300 block uppercase">Coefficient of Variation (CV)</span>
+            <div className="p-2.5 rounded bg-[#090B0E] border border-[#202630] space-y-1">
+              <span className="text-[10px] text-[#626C79] block uppercase">Coefficient of Variation (CV)</span>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-graphite-50 tabular-nums">
+                <span className="text-sm font-bold text-[#E8EAF0] tabular-nums">
                   {candidate?.summary_metrics?.coefficient_of_variation != null
                     ? `${(candidate.summary_metrics.coefficient_of_variation * 100).toFixed(1)}%`
                     : "0.024 (2.4%) [SIM]"}
                 </span>
-                <span className="text-[11px] text-status-success font-sans">
+                <span className="text-[11px] text-[#34D399] font-sans">
                   {candidate?.summary_metrics?.coefficient_of_variation != null
                     ? candidate.summary_metrics.coefficient_of_variation < 0.05
                       ? "Below 5% threshold (Test Valid)"
@@ -443,9 +472,9 @@ ${displayRows.map((r) => `- ${r.metric}: ${r.baseline} -> ${r.candidate} (${r.de
               </div>
             </div>
 
-            <div className="p-2.5 rounded bg-graphite-950 border border-graphite-600 space-y-1 text-[11px]">
-              <span className="font-semibold text-graphite-50 block font-mono">Automated CI Policy Rule:</span>
-              <p className="text-graphite-200 font-sans leading-relaxed">
+            <div className="p-2.5 rounded bg-[#090B0E] border border-[#202630] space-y-1 text-[11px]">
+              <span className="font-semibold text-[#E8EAF0] block font-mono">Automated CI Policy Rule:</span>
+              <p className="text-[#929AA6] font-sans leading-relaxed">
                 If candidate p95 latency improves by &gt; 5% with p &lt; 0.05 and CV &lt; 0.05, PR status checks pass automatically.
               </p>
             </div>

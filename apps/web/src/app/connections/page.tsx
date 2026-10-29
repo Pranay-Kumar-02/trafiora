@@ -193,13 +193,13 @@ export default function ConnectionsPage() {
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202630] pb-3">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
-            <RotateCw className="w-5 h-5 text-brand-teal" />
-            <span>DATABASE TARGET CONNECTIONS &amp; OPERATIONAL TIERS</span>
+          <h1 className="text-sm font-bold tracking-tight text-[#E8EAF0] flex items-center gap-2 font-mono uppercase">
+            <RotateCw className="w-4 h-4 text-[#4E9F8E]" />
+            <span>Database Target Connections &amp; Operational Tiers</span>
           </h1>
-          <p className="text-xs text-graphite-200 mt-0.5">
+          <p className="text-xs text-[#929AA6] mt-0.5 font-sans">
             Manage target database connections with AES-256 vault encryption and strict operational tier safety boundaries.
           </p>
         </div>
@@ -207,14 +207,14 @@ export default function ConnectionsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={fetchConnections}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-600 text-xs font-mono text-graphite-200 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#12161C] hover:bg-[#191E25] border border-[#202630] text-xs font-mono text-[#CBD5E1] transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
             <span>Refresh</span>
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded bg-brand-teal hover:bg-brand-tealLight text-graphite-950 font-bold text-xs font-mono transition-colors shadow-subtle"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#4E9F8E] hover:bg-[#5bb8a4] text-[#050607] font-bold text-xs font-mono transition-colors shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Connection</span>
@@ -223,40 +223,40 @@ export default function ConnectionsPage() {
       </div>
 
       {/* Three-Tier Operational Security Model Callout */}
-      <div className="panel p-3.5 border-graphite-600 bg-graphite-850 flex items-start gap-3 text-xs text-graphite-200 font-mono">
-        <Shield className="w-4 h-4 text-brand-teal shrink-0 mt-0.5" />
+      <div className="bg-[#0D1014] p-3.5 rounded border border-[#202630] flex items-start gap-3 text-xs text-[#929AA6] font-mono shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
+        <Shield className="w-4 h-4 text-[#4E9F8E] shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <span className="font-bold text-graphite-50 uppercase text-[11px] block">
+          <span className="font-bold text-[#E8EAF0] uppercase text-[11px] block">
             Three-Tier Operational Security Model
           </span>
-          <p className="text-graphite-300 leading-relaxed text-[11px] font-sans">
-            <strong className="text-status-success font-semibold">Tier 1 (Read-Only Observation):</strong> Zero benchmark executions permitted. All DDL/DML and EXPLAIN ANALYZE are strictly blocked.<br />
-            <strong className="text-status-warning font-semibold">Tier 2 (Workload Benchmark Target):</strong> Explicitly authorized test database for running pgbench and measuring latency.<br />
-            <strong className="text-status-error font-semibold">Tier 3 (Disposable Sandbox):</strong> Isolated sandbox permitted for DDL index verification and destructive stress tests.
+          <p className="text-[#929AA6] leading-relaxed text-[11px] font-sans">
+            <strong className="text-[#34D399] font-semibold">Tier 1 (Read-Only Observation):</strong> Zero benchmark executions permitted. All DDL/DML and EXPLAIN ANALYZE are strictly blocked.<br />
+            <strong className="text-[#FBBF24] font-semibold">Tier 2 (Workload Benchmark Target):</strong> Explicitly authorized test database for running pgbench and measuring latency.<br />
+            <strong className="text-[#FB7185] font-semibold">Tier 3 (Disposable Sandbox):</strong> Isolated sandbox permitted for DDL index verification and destructive stress tests.
           </p>
         </div>
       </div>
 
       {/* Empty State when no connections exist */}
       {connections.length === 0 && !isLoading && (
-        <div className="panel p-8 text-center space-y-3 border-dashed border-graphite-600">
-          <Database className="w-8 h-8 text-graphite-400 mx-auto" />
+        <div className="bg-[#0D1014] p-8 text-center space-y-3 border border-dashed border-[#202630] rounded shadow-[0_4px_20px_rgba(0,0,0,0.7)]">
+          <Database className="w-8 h-8 text-[#626C79] mx-auto" />
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-graphite-100 font-mono">No Registered Database Targets</h3>
-            <p className="text-xs text-graphite-300 max-w-md mx-auto">
+            <h3 className="text-sm font-bold text-[#E8EAF0] font-mono">No Registered Database Targets</h3>
+            <p className="text-xs text-[#929AA6] max-w-md mx-auto font-sans">
               No live database connections are currently registered. Register an authorized PostgreSQL instance or view simulated demo profiles.
             </p>
           </div>
           <div className="flex items-center justify-center gap-2 pt-2">
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-3 py-1.5 rounded bg-brand-teal text-graphite-950 font-bold text-xs font-mono hover:bg-brand-tealLight transition-colors"
+              className="px-3.5 py-1.5 rounded bg-[#4E9F8E] text-[#050607] font-bold text-xs font-mono hover:bg-[#5bb8a4] transition-colors"
             >
               Add Connection
             </button>
             <button
               onClick={() => setConnections(SAMPLE_DEMO_CONNECTIONS)}
-              className="px-3 py-1.5 rounded bg-graphite-800 border border-graphite-600 text-graphite-200 text-xs font-mono hover:bg-graphite-750 transition-colors"
+              className="px-3.5 py-1.5 rounded bg-[#12161C] border border-[#202630] text-[#CBD5E1] text-xs font-mono hover:bg-[#191E25] transition-colors"
             >
               Load Simulated Demo Profiles
             </button>
@@ -272,15 +272,15 @@ export default function ConnectionsPage() {
           const isConnected = c.capabilities?.connected === true || c.probe_status === "success";
 
           return (
-            <div key={c.id} className="panel p-4 space-y-3 panel-interactive">
+            <div key={c.id} className="bg-[#0D1014] border border-[#202630] rounded p-4 space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.7)] hover:border-[#28323F] transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-brand-teal" />
-                  <span className="font-bold text-xs text-graphite-50 font-sans">{c.name}</span>
+                  <Database className="w-4 h-4 text-[#4E9F8E]" />
+                  <span className="font-bold text-xs text-[#E8EAF0] font-sans">{c.name}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {c.is_simulated && (
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-graphite-800 text-graphite-300 border border-graphite-600">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#090B0E] text-[#626C79] border border-[#202630]">
                       SIMULATED
                     </span>
                   )}
@@ -298,19 +298,18 @@ export default function ConnectionsPage() {
                 </div>
               </div>
 
-
-              <div className="p-2.5 rounded bg-graphite-950 font-mono text-xs text-graphite-200 space-y-1 border border-graphite-600">
-                <div><span className="text-graphite-400">Host:</span> <strong className="text-graphite-100">{c.host}:{c.port}</strong></div>
-                <div><span className="text-graphite-400">Database:</span> {dbVal}</div>
-                <div><span className="text-graphite-400">Role:</span> {c.username}</div>
-                <div><span className="text-graphite-400">Credentials:</span> <span className="text-brand-teal font-sans italic text-[11px]">[Vault Encrypted]</span></div>
+              <div className="p-3 rounded bg-[#090B0E] font-mono text-xs text-[#CBD5E1] space-y-1 border border-[#202630]">
+                <div><span className="text-[#626C79]">Host:</span> <strong className="text-[#E8EAF0]">{c.host}:{c.port}</strong></div>
+                <div><span className="text-[#626C79]">Database:</span> {dbVal}</div>
+                <div><span className="text-[#626C79]">Role:</span> {c.username}</div>
+                <div><span className="text-[#626C79]">Credentials:</span> <span className="text-[#4E9F8E] font-sans italic text-[11px]">[Vault Encrypted]</span></div>
                 {c.capabilities?.server_version && (
-                  <div><span className="text-graphite-400">Engine:</span> {c.capabilities.server_version}</div>
+                  <div><span className="text-[#626C79]">Engine:</span> {c.capabilities.server_version}</div>
                 )}
               </div>
 
               <div className="flex items-center justify-between text-xs pt-0.5">
-                <span className={`flex items-center gap-1.5 ${isConnected ? "text-status-success" : "text-status-warning"}`}>
+                <span className={`flex items-center gap-1.5 ${isConnected ? "text-[#34D399]" : "text-[#FBBF24]"}`}>
                   {isConnected ? (
                     <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                   ) : (
@@ -323,12 +322,12 @@ export default function ConnectionsPage() {
                 <button
                   onClick={() => handleProbe(c.id)}
                   disabled={c.probe_status === "probing"}
-                  className="px-2.5 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-600 text-graphite-100 text-xs font-mono transition-colors shrink-0 flex items-center gap-1.5"
+                  className="px-2.5 py-1 rounded bg-[#12161C] hover:bg-[#191E25] border border-[#202630] text-[#CBD5E1] text-xs font-mono transition-colors shrink-0 flex items-center gap-1.5"
                 >
                   {c.probe_status === "probing" ? (
-                    <RefreshCw className="w-3 h-3 animate-spin text-brand-teal" />
+                    <RefreshCw className="w-3 h-3 animate-spin text-[#4E9F8E]" />
                   ) : (
-                    <Zap className="w-3 h-3 text-brand-teal" />
+                    <Zap className="w-3 h-3 text-[#4E9F8E]" />
                   )}
                   <span>{c.probe_status === "probing" ? "Probing..." : "Test Connectivity"}</span>
                 </button>
@@ -341,22 +340,22 @@ export default function ConnectionsPage() {
       {/* Add Connection Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="panel w-full max-w-lg p-5 border border-graphite-500 space-y-4 shadow-elevated bg-graphite-900">
-            <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
-              <h2 className="text-xs font-bold text-graphite-50 font-mono uppercase flex items-center gap-2">
-                <Database className="w-4 h-4 text-brand-teal" />
+          <div className="w-full max-w-lg p-5 border border-[#28323F] rounded space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.9)] bg-[#0D1014]">
+            <div className="flex items-center justify-between border-b border-[#202630] pb-2">
+              <h2 className="text-xs font-bold text-[#E8EAF0] font-mono uppercase flex items-center gap-2">
+                <Database className="w-4 h-4 text-[#4E9F8E]" />
                 <span>Register New Database Target</span>
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-graphite-400 hover:text-white p-1 rounded"
+                className="text-[#929AA6] hover:text-[#E8EAF0] p-1 rounded transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {formError && (
-              <div className="p-2.5 rounded bg-status-errorSurface border border-status-errorBorder text-xs text-status-error font-mono flex items-center gap-2">
+              <div className="p-2.5 rounded bg-[#180A0A] border border-[#441616] text-xs text-[#FB7185] font-mono flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{formError}</span>
               </div>
@@ -364,35 +363,35 @@ export default function ConnectionsPage() {
 
             <form onSubmit={handleCreateConnection} className="space-y-3 text-xs font-mono">
               <div>
-                <label className="text-graphite-300 block mb-1">Target Name / Identifier</label>
+                <label className="text-[#929AA6] block mb-1">Target Name / Identifier</label>
                 <input
                   type="text"
                   placeholder="e.g., Staging Benchmark Target"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                  className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] focus:outline-none focus:border-[#4E9F8E] transition-colors"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                  <label className="text-graphite-300 block mb-1">Host / IP</label>
+                  <label className="text-[#929AA6] block mb-1">Host / IP</label>
                   <input
                     type="text"
                     value={host}
                     onChange={(e) => setHost(e.target.value)}
-                    className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                    className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] focus:outline-none focus:border-[#4E9F8E] transition-colors"
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-graphite-300 block mb-1">Port</label>
+                  <label className="text-[#929AA6] block mb-1">Port</label>
                   <input
                     type="number"
                     value={port}
                     onChange={(e) => setPort(Number(e.target.value))}
-                    className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 tabular-nums focus:outline-none focus:border-brand-teal"
+                    className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] tabular-nums focus:outline-none focus:border-[#4E9F8E] transition-colors"
                     required
                   />
                 </div>
@@ -400,44 +399,44 @@ export default function ConnectionsPage() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-graphite-300 block mb-1">Database Name</label>
+                  <label className="text-[#929AA6] block mb-1">Database Name</label>
                   <input
                     type="text"
                     value={databaseName}
                     onChange={(e) => setDatabaseName(e.target.value)}
-                    className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                    className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] focus:outline-none focus:border-[#4E9F8E] transition-colors"
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-graphite-300 block mb-1">Username</label>
+                  <label className="text-[#929AA6] block mb-1">Username</label>
                   <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                    className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] focus:outline-none focus:border-[#4E9F8E] transition-colors"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-graphite-300 block mb-1">Password (Vault Encrypted with AES-256)</label>
+                <label className="text-[#929AA6] block mb-1">Password (Vault Encrypted with AES-256)</label>
                 <input
                   type="password"
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                  className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] focus:outline-none focus:border-[#4E9F8E] transition-colors"
                 />
               </div>
 
               <div>
-                <label className="text-graphite-300 block mb-1">Operational Security Tier</label>
+                <label className="text-[#929AA6] block mb-1">Operational Security Tier</label>
                 <select
                   value={tier}
                   onChange={(e) => setTier(e.target.value)}
-                  className="w-full bg-graphite-950 border border-graphite-600 rounded p-2 text-graphite-50 focus:outline-none focus:border-brand-teal"
+                  className="w-full bg-[#090B0E] border border-[#202630] rounded p-2 text-[#E8EAF0] focus:outline-none focus:border-[#4E9F8E] transition-colors"
                 >
                   <option value="tier_1_read_only">Tier 1: Read-Only Observation (No benchmarking)</option>
                   <option value="tier_2_workload_benchmark">Tier 2: Authorized Benchmark Test Target</option>
@@ -451,25 +450,25 @@ export default function ConnectionsPage() {
                   id="sandbox-check"
                   checked={isSandbox}
                   onChange={(e) => setIsSandbox(e.target.checked)}
-                  className="rounded border-graphite-600"
+                  className="rounded border-[#202630] bg-[#090B0E] text-[#4E9F8E] focus:ring-0"
                 />
-                <label htmlFor="sandbox-check" className="text-graphite-300">
+                <label htmlFor="sandbox-check" className="text-[#929AA6]">
                   Explicitly flag as disposable sandbox environment
                 </label>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-graphite-600">
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#202630]">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-3 py-1.5 rounded bg-graphite-800 hover:bg-graphite-750 text-graphite-300 font-mono"
+                  className="px-3.5 py-1.5 rounded bg-[#12161C] hover:bg-[#191E25] text-[#929AA6] font-mono border border-[#202630] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 rounded bg-brand-teal hover:bg-brand-tealLight text-graphite-950 font-bold font-mono shadow-subtle flex items-center gap-1.5"
+                  className="px-4 py-1.5 rounded bg-[#4E9F8E] hover:bg-[#5bb8a4] text-[#050607] font-bold font-mono shadow-sm flex items-center gap-1.5 transition-colors"
                 >
                   {isSubmitting && <RefreshCw className="w-3 h-3 animate-spin" />}
                   <span>Save Target Connection</span>

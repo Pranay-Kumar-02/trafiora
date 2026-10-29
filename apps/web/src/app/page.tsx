@@ -15,10 +15,10 @@ import {
   Shield,
   Zap,
 } from "lucide-react";
-import { Badge } from "../components/ui/Badge";
-import { MetricCard } from "../components/ui/MetricCard";
-import { TimeSeriesChart, DataPoint } from "../components/ui/TimeSeriesChart";
-import { apiClient } from "../lib/api-client";
+import { Badge } from "@/components/ui/Badge";
+import { MetricCard } from "@/components/ui/MetricCard";
+import { TimeSeriesChart, DataPoint } from "@/components/ui/TimeSeriesChart";
+import { apiClient } from "@/lib/api-client";
 
 interface ActiveTargetStatus {
   has_connection: boolean;
@@ -238,14 +238,14 @@ export default function OverviewPage() {
   const telemetry = activeTarget?.telemetry;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-4 sm:space-y-5 max-w-7xl mx-auto">
       {/* Workspace Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-600 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#202630] pb-3">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-graphite-50 flex items-center gap-2 font-mono">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-[#E8EAF0] flex items-center gap-2 font-mono">
             <span>DATABASE WORKLOAD INTELLIGENCE OVERVIEW</span>
           </h1>
-          <p className="text-xs text-graphite-200 mt-0.5">
+          <p className="text-xs text-[#929AA6] mt-0.5">
             Diagnostic observability, workload execution trends, and resource saturation for PostgreSQL target.
           </p>
         </div>
@@ -256,24 +256,24 @@ export default function OverviewPage() {
               setIsLoading(true);
               fetchData();
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-500 text-xs font-mono text-graphite-100 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0D1014] hover:bg-[#12161C] border border-[#202630] hover:border-[#28323F] text-xs font-mono text-[#E8EAF0] transition-colors shadow-subtle"
             title="Refresh live telemetry from PostgreSQL catalog"
           >
-            <RotateCw className={`w-3.5 h-3.5 text-brand-teal ${isLoading ? "animate-spin" : ""}`} />
+            <RotateCw className={`w-3.5 h-3.5 text-[#4E9F8E] ${isLoading ? "animate-spin" : ""}`} />
             <span>Refresh</span>
           </button>
           <Link
             href="/canvas"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-graphite-800 hover:bg-graphite-750 border border-graphite-500 text-xs font-mono text-graphite-100 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0D1014] hover:bg-[#12161C] border border-[#202630] hover:border-[#28323F] text-xs font-mono text-[#E8EAF0] transition-colors shadow-subtle"
           >
-            <Layers className="w-3.5 h-3.5 text-brand-teal" />
+            <Layers className="w-3.5 h-3.5 text-[#4E9F8E]" />
             <span>Architecture Canvas</span>
           </Link>
           <Link
             href="/experiments"
-            className="flex items-center gap-1.5 px-3 py-1 rounded bg-brand-teal hover:bg-brand-tealLight text-graphite-950 font-semibold text-xs font-mono transition-colors shadow-subtle"
+            className="flex items-center gap-1.5 px-3 py-1 rounded bg-[#12161C] hover:bg-[#191E25] border border-[#28323F] hover:border-[#364354] text-xs font-mono text-[#E8EAF0] font-medium transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)]"
           >
-            <Play className="w-3 h-3 fill-current" />
+            <Play className="w-3 h-3 text-[#4E9F8E] fill-[#4E9F8E]" />
             <span>New Benchmark</span>
           </Link>
         </div>
@@ -281,25 +281,25 @@ export default function OverviewPage() {
 
       {/* System Health Strip */}
       <div className="panel p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
-        <div className="flex items-center gap-2 border-r border-graphite-600/60 pr-2">
+        <div className="flex items-center gap-2 border-r border-[#202630] pr-2">
           <span
             className={`w-2 h-2 rounded-full ${
-              apiOnline === null ? "bg-graphite-500" : apiOnline ? "bg-status-success" : "bg-status-error"
+              apiOnline === null ? "bg-[#626C79]" : apiOnline ? "bg-[#34D399]" : "bg-[#FB7185]"
             }`}
           />
           <div className="flex flex-col">
-            <span className="text-[10px] text-graphite-300">CONTROL PLANE</span>
-            <span className="text-graphite-50 font-semibold">
+            <span className="text-[10px] text-[#626C79]">CONTROL PLANE</span>
+            <span className="text-[#E8EAF0] font-semibold">
               {apiOnline === null ? "Probing..." : apiOnline ? "Active (/api/v1)" : "Offline"}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 border-r border-graphite-600/60 pr-2">
-          <Database className="w-4 h-4 text-brand-teal shrink-0" />
+        <div className="flex items-center gap-2 border-r border-[#202630] pr-2">
+          <Database className="w-4 h-4 text-[#4E9F8E] shrink-0" />
           <div className="flex flex-col">
-            <span className="text-[10px] text-graphite-300">TARGET DB STATUS</span>
-            <span className="text-graphite-50 font-semibold">
+            <span className="text-[10px] text-[#626C79]">TARGET DB STATUS</span>
+            <span className="text-[#E8EAF0] font-semibold truncate">
               {activeTarget?.has_connection
                 ? isTargetOnline
                   ? `Online (${activeTarget.connection?.name})`
@@ -309,11 +309,11 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 border-r border-graphite-600/60 pr-2">
-          <Shield className="w-4 h-4 text-status-warning shrink-0" />
+        <div className="flex items-center gap-2 border-r border-[#202630] pr-2">
+          <Shield className="w-4 h-4 text-[#FBBF24] shrink-0" />
           <div className="flex flex-col">
-            <span className="text-[10px] text-graphite-300">OPERATIONAL TIER</span>
-            <span className="text-status-warning font-semibold truncate max-w-[140px]">
+            <span className="text-[10px] text-[#626C79]">OPERATIONAL TIER</span>
+            <span className="text-[#FBBF24] font-semibold truncate max-w-[140px]">
               {activeTarget?.connection?.operational_tier
                 ? activeTarget.connection.operational_tier.replace(/_/g, " ").toUpperCase()
                 : "None Configured"}
@@ -322,10 +322,10 @@ export default function OverviewPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-status-info shrink-0" />
+          <Zap className="w-4 h-4 text-[#CBD5E1] shrink-0" />
           <div className="flex flex-col">
-            <span className="text-[10px] text-graphite-300">PG_STAT_STATEMENTS</span>
-            <span className="text-graphite-50 font-semibold">
+            <span className="text-[10px] text-[#626C79]">PG_STAT_STATEMENTS</span>
+            <span className="text-[#E8EAF0] font-semibold">
               {isTargetOnline
                 ? hasPgStatStatements
                   ? "Installed & Active"
@@ -476,7 +476,7 @@ export default function OverviewPage() {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowSimulatedChart(!showSimulatedChart)}
-                className="text-[11px] font-mono text-graphite-300 hover:text-brand-teal transition-colors underline"
+                className="text-[11px] font-mono text-[#626C79] hover:text-[#CBD5E1] transition-colors underline"
               >
                 {showSimulatedChart ? "Hide Demo Trace" : "Preview Simulated Demo Trace"}
               </button>
@@ -486,11 +486,11 @@ export default function OverviewPage() {
 
         {/* Right: Resource Saturation Context (1 col) */}
         <div className="panel p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
-            <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+          <div className="flex items-center justify-between border-b border-[#202630] pb-2">
+            <h3 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase tracking-tight">
               Resource Saturation & Limits
             </h3>
-            <span className="text-[10px] font-mono text-graphite-300">
+            <span className="text-[10px] font-mono text-[#626C79]">
               {isTargetOnline ? "Live Catalog" : "Unavailable"}
             </span>
           </div>
@@ -498,9 +498,9 @@ export default function OverviewPage() {
           <div className="space-y-3 text-xs font-mono">
             {/* Active Connections */}
             <div className="space-y-1">
-              <div className="flex justify-between text-graphite-200">
+              <div className="flex justify-between text-[#929AA6]">
                 <span>Active Server Connections:</span>
-                <span className="text-graphite-50 font-bold tabular-nums">
+                <span className="text-[#E8EAF0] font-bold tabular-nums">
                   {telemetry?.active_backends != null
                     ? `${telemetry.active_backends} / ${telemetry.max_connections || 100} (${Math.round(
                         (telemetry.active_backends / (telemetry.max_connections || 100)) * 100
@@ -508,9 +508,9 @@ export default function OverviewPage() {
                     : "Unavailable (Offline)"}
                 </span>
               </div>
-              <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
+              <div className="w-full bg-[#050607] border border-[#202630] rounded-full h-1.5 overflow-hidden">
                 <div
-                  className="bg-brand-teal h-full rounded-full transition-all"
+                  className="bg-[#4E9F8E] h-full rounded-full transition-all"
                   style={{
                     width:
                       telemetry?.active_backends != null
@@ -526,37 +526,37 @@ export default function OverviewPage() {
 
             {/* PgBouncer / Connection Pool */}
             <div className="space-y-1">
-              <div className="flex justify-between text-graphite-200">
+              <div className="flex justify-between text-[#929AA6]">
                 <span>PgBouncer Client Queue Wait:</span>
-                <span className="text-graphite-300 font-bold tabular-nums">
+                <span className="text-[#626C79] font-bold tabular-nums">
                   {isTargetOnline ? "0 clients" : "Unavailable"}
                 </span>
               </div>
-              <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-status-success h-full rounded-full" style={{ width: "0%" }} />
+              <div className="w-full bg-[#050607] border border-[#202630] rounded-full h-1.5 overflow-hidden">
+                <div className="bg-[#34D399] h-full rounded-full" style={{ width: "0%" }} />
               </div>
             </div>
 
             {/* Host CPU Utilization */}
             <div className="space-y-1">
-              <div className="flex justify-between text-graphite-200">
+              <div className="flex justify-between text-[#929AA6]">
                 <span>Database Host CPU Usage:</span>
-                <span className="text-graphite-300 font-bold tabular-nums">
+                <span className="text-[#626C79] font-bold tabular-nums">
                   Unavailable (Requires host cgroups v2)
                 </span>
               </div>
-              <div className="w-full bg-graphite-800 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-graphite-700 h-full rounded-full" style={{ width: "0%" }} />
+              <div className="w-full bg-[#050607] border border-[#202630] rounded-full h-1.5 overflow-hidden">
+                <div className="bg-[#12161C] h-full rounded-full" style={{ width: "0%" }} />
               </div>
             </div>
 
             {/* Lock Contention */}
             <div className="space-y-1">
-              <div className="flex justify-between text-graphite-200">
+              <div className="flex justify-between text-[#929AA6]">
                 <span>Transaction Lock Waits:</span>
                 <span
                   className={`font-bold tabular-nums ${
-                    (telemetry?.waiting_locks || 0) > 0 ? "text-status-warning" : "text-status-success"
+                    (telemetry?.waiting_locks || 0) > 0 ? "text-[#FBBF24]" : "text-[#34D399]"
                   }`}
                 >
                   {telemetry?.waiting_locks != null ? `${telemetry.waiting_locks} waiting` : "Unavailable"}
@@ -565,11 +565,11 @@ export default function OverviewPage() {
             </div>
           </div>
 
-          <div className="p-2.5 rounded bg-graphite-850 border border-graphite-600 text-[11px] text-graphite-200 space-y-1">
-            <span className="font-semibold text-graphite-50 block font-mono">Overload Circuit Breaker:</span>
+          <div className="p-2.5 rounded bg-[#090B0E] border border-[#202630] text-[11px] text-[#929AA6] space-y-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+            <span className="font-semibold text-[#E8EAF0] block font-mono">Overload Circuit Breaker:</span>
             <p className="leading-relaxed">
               Target operational tier:{" "}
-              <strong className="text-graphite-100 font-mono">
+              <strong className="text-[#CBD5E1] font-mono">
                 {activeTarget?.connection?.operational_tier || "UNCONFIGURED"}
               </strong>
               . Safe observation and execution boundaries are strictly enforced.
@@ -580,27 +580,27 @@ export default function OverviewPage() {
 
       {/* Query Workload Table & Details */}
       <div className="panel p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-graphite-600 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#202630] pb-3">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+              <h3 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase tracking-tight">
                 Top Workload Execution Impact Queries
               </h3>
               {realFormattedQueries.length > 0 ? (
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-brand-teal/20 text-brand-teal border border-brand-teal/40">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#0A1912] text-[#34D399] border border-[#173B2B]">
                   LIVE PG_STAT_STATEMENTS
                 </span>
               ) : showSimulatedQueries ? (
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#12161C] text-[#929AA6] border border-[#202630]">
                   SIMULATED DEMO PROFILE
                 </span>
               ) : (
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-graphite-800 text-graphite-400 border border-graphite-700">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#090B0E] text-[#626C79] border border-[#202630]">
                   UNAVAILABLE
                 </span>
               )}
             </div>
-            <span className="text-[11px] text-graphite-300">
+            <span className="text-[11px] text-[#626C79]">
               {realFormattedQueries.length > 0
                 ? "Queried live from target database pg_stat_statements extension."
                 : "Shows queries sorted by cumulative execution time when target is active with pg_stat_statements."}
@@ -609,30 +609,30 @@ export default function OverviewPage() {
 
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-graphite-300 absolute left-2.5 top-2" />
+              <Search className="w-3.5 h-3.5 text-[#626C79] absolute left-2.5 top-2" />
               <input
                 type="text"
                 placeholder="Filter statement or anti-pattern..."
                 value={querySearch}
                 onChange={(e) => setQuerySearch(e.target.value)}
-                className="pl-8 pr-3 py-1 bg-graphite-850 border border-graphite-600 rounded text-xs text-graphite-100 placeholder:text-graphite-300 focus:outline-none focus:border-brand-teal w-64 font-mono"
+                className="pl-8 pr-3 py-1 bg-[#090B0E] border border-[#202630] rounded text-xs text-[#E8EAF0] placeholder:text-[#626C79] focus:outline-none focus:border-[#364354] w-64 font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]"
               />
             </div>
             <Link
               href="/workload"
-              className="text-xs font-mono text-brand-teal hover:underline flex items-center gap-1"
+              className="text-xs font-mono text-[#CBD5E1] hover:text-[#E8EAF0] hover:underline flex items-center gap-1 transition-colors"
             >
               <span>Workload Explorer</span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3 h-3 text-[#626C79]" />
             </Link>
           </div>
         </div>
 
         {/* Empty State when no real queries and not showing demo */}
         {activeQueriesList.length === 0 ? (
-          <div className="p-8 text-center space-y-2 border border-graphite-700/60 rounded bg-graphite-900/40">
-            <Database className="w-8 h-8 text-graphite-400 mx-auto" />
-            <div className="text-xs font-mono text-graphite-200 font-semibold">
+          <div className="p-8 text-center space-y-2 border border-[#202630] rounded bg-[#090B0E]">
+            <Database className="w-8 h-8 text-[#626C79] mx-auto" />
+            <div className="text-xs font-mono text-[#E8EAF0] font-semibold">
               {activeTarget?.has_connection
                 ? isTargetOnline
                   ? hasPgStatStatements
@@ -641,7 +641,7 @@ export default function OverviewPage() {
                   : "PostgreSQL target is currently offline or unreachable."
                 : "No database target connection configured."}
             </div>
-            <p className="text-xs text-graphite-300 max-w-md mx-auto">
+            <p className="text-xs text-[#626C79] max-w-md mx-auto">
               {activeTarget?.has_connection
                 ? "Run a benchmark or execute database transactions to populate live query telemetry."
                 : "Register and connect a PostgreSQL target in the Connections view to inspect queries."}
@@ -649,13 +649,13 @@ export default function OverviewPage() {
             <div className="pt-2 flex items-center justify-center gap-3">
               <Link
                 href="/connections"
-                className="px-3 py-1 bg-graphite-800 hover:bg-graphite-750 border border-graphite-600 rounded text-xs font-mono text-graphite-100"
+                className="px-3 py-1 bg-[#12161C] hover:bg-[#191E25] border border-[#202630] rounded text-xs font-mono text-[#E8EAF0] transition-colors"
               >
                 Manage Connections
               </Link>
               <button
                 onClick={() => setShowSimulatedQueries(true)}
-                className="px-3 py-1 bg-graphite-800 hover:bg-graphite-750 border border-graphite-600 rounded text-xs font-mono text-brand-teal"
+                className="px-3 py-1 bg-[#12161C] hover:bg-[#191E25] border border-[#202630] rounded text-xs font-mono text-[#CBD5E1] transition-colors"
               >
                 Preview Simulated Demo Queries
               </button>
@@ -665,7 +665,7 @@ export default function OverviewPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
               <thead>
-                <tr className="border-b border-graphite-600 text-[10px] text-graphite-300 uppercase">
+                <tr className="border-b border-[#202630] text-[10px] text-[#626C79] uppercase">
                   <th className="py-2 px-3">Fingerprint</th>
                   <th className="py-2 px-3">Normalized Statement</th>
                   <th className="py-2 px-3 text-right">Exec Impact</th>
@@ -674,45 +674,45 @@ export default function OverviewPage() {
                   <th className="py-2 px-3">Diagnostic Heuristic</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-graphite-600/60">
+              <tbody className="divide-y divide-[#202630]/60">
                 {filteredQueries.map((q) => (
                   <tr
                     key={q.fingerprint}
                     onClick={() => setSelectedQuery(q)}
                     className={`cursor-pointer transition-colors ${
                       selectedQuery?.fingerprint === q.fingerprint
-                        ? "bg-graphite-800 text-graphite-50"
-                        : "hover:bg-graphite-850/60 text-graphite-200"
+                        ? "bg-[#12161C] text-[#E8EAF0]"
+                        : "hover:bg-[#12161C]/50 text-[#929AA6]"
                     }`}
                   >
-                    <td className="py-2.5 px-3 text-brand-teal font-semibold flex items-center gap-1.5">
+                    <td className="py-2.5 px-3 text-[#CBD5E1] font-semibold flex items-center gap-1.5">
                       <span>{q.fingerprint}</span>
                       {q.isSimulated && (
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-[#090B0E] text-[#626C79] border border-[#202630]">
                           SIM
                         </span>
                       )}
                     </td>
-                    <td className="py-2.5 px-3 max-w-md truncate font-sans text-xs text-graphite-100">
+                    <td className="py-2.5 px-3 max-w-md truncate font-sans text-xs text-[#E8EAF0]">
                       {q.statement}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-bold tabular-nums text-graphite-50">
+                    <td className="py-2.5 px-3 text-right font-bold tabular-nums text-[#E8EAF0]">
                       {q.totalTimePct.toFixed(1)}%
                     </td>
-                    <td className="py-2.5 px-3 text-right tabular-nums text-graphite-300">
+                    <td className="py-2.5 px-3 text-right tabular-nums text-[#626C79]">
                       {q.calls.toLocaleString()}
                     </td>
-                    <td className="py-2.5 px-3 text-right tabular-nums text-graphite-100">
+                    <td className="py-2.5 px-3 text-right tabular-nums text-[#CBD5E1]">
                       {q.meanLatencyMs.toFixed(1)} ms
                     </td>
                     <td className="py-2.5 px-3">
                       {q.antiPattern ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-status-warningSurface text-status-warning border border-status-warningBorder">
+                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[#191408] text-[#FBBF24] border border-[#38290E]">
                           <AlertTriangle className="w-2.5 h-2.5" />
                           <span className="truncate max-w-[200px]">{q.antiPattern}</span>
                         </span>
                       ) : (
-                        <span className="text-[10px] text-graphite-400">Normal Scan</span>
+                        <span className="text-[10px] text-[#626C79]">Normal Scan</span>
                       )}
                     </td>
                   </tr>
@@ -727,10 +727,10 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Latest Experiment Delta */}
         <div className="panel p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+          <div className="flex items-center justify-between border-b border-[#202630] pb-2">
             <div className="flex items-center gap-2">
-              <GitCompare className="w-4 h-4 text-brand-teal" />
-              <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+              <GitCompare className="w-4 h-4 text-[#4E9F8E]" />
+              <h3 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase tracking-tight">
                 Latest Benchmark Comparison
               </h3>
             </div>
@@ -747,27 +747,27 @@ export default function OverviewPage() {
                 {candidateExp.outcome_classification || "PENDING"}
               </Badge>
             ) : (
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#12161C] text-[#626C79] border border-[#202630]">
                 SIMULATED REFERENCE
               </span>
             )}
           </div>
 
           {candidateExp && baselineExp ? (
-            <div className="p-3 rounded bg-graphite-850 border border-graphite-600 space-y-2 text-xs font-mono">
-              <div className="flex justify-between text-graphite-300 text-[11px]">
+            <div className="p-3 rounded bg-[#090B0E] border border-[#202630] space-y-2 text-xs font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+              <div className="flex justify-between text-[#626C79] text-[11px]">
                 <span>
-                  Candidate: <strong className="text-graphite-100">{candidateExp.name}</strong>
+                  Candidate: <strong className="text-[#E8EAF0]">{candidateExp.name}</strong>
                 </span>
                 <span>
-                  Baseline: <strong className="text-graphite-100">{baselineExp.name}</strong>
+                  Baseline: <strong className="text-[#E8EAF0]">{baselineExp.name}</strong>
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-graphite-600/60">
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#202630]">
                 <div>
-                  <span className="text-[10px] text-graphite-300 block">BASELINE p95</span>
-                  <span className="text-sm font-bold text-graphite-100 tabular-nums">
+                  <span className="text-[10px] text-[#626C79] block">BASELINE p95</span>
+                  <span className="text-sm font-bold text-[#E8EAF0] tabular-nums">
                     {baselineExp.summary_metrics?.mean_p95 != null
                       ? `${(baselineExp.summary_metrics.mean_p95 as number).toFixed(2)} ms`
                       : baselineExp.summary_metrics?.latency_p95_ms != null
@@ -776,8 +776,8 @@ export default function OverviewPage() {
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-graphite-300 block">CANDIDATE p95</span>
-                  <span className="text-sm font-bold text-brand-teal tabular-nums">
+                  <span className="text-[10px] text-[#626C79] block">CANDIDATE p95</span>
+                  <span className="text-sm font-bold text-[#4E9F8E] tabular-nums">
                     {candidateExp.summary_metrics?.mean_p95 != null
                       ? `${(candidateExp.summary_metrics.mean_p95 as number).toFixed(2)} ms`
                       : candidateExp.summary_metrics?.latency_p95_ms != null
@@ -786,45 +786,45 @@ export default function OverviewPage() {
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-graphite-300 block">STATUS</span>
-                  <span className="text-xs font-bold text-graphite-100">
+                  <span className="text-[10px] text-[#626C79] block">STATUS</span>
+                  <span className="text-xs font-bold text-[#CBD5E1]">
                     {candidateExp.outcome_classification}
                   </span>
                 </div>
               </div>
 
-              <p className="text-[11px] text-graphite-200 font-sans pt-1">
+              <p className="text-[11px] text-[#929AA6] font-sans pt-1">
                 Completed {candidateExp.repetitions_completed} repetitions. Target:{" "}
                 {activeTarget?.connection?.name || "PostgreSQL Target"}.
               </p>
             </div>
           ) : (
-            <div className="p-3 rounded bg-graphite-850 border border-graphite-600 space-y-2 text-xs font-mono">
-              <div className="flex justify-between text-graphite-300 text-[11px]">
+            <div className="p-3 rounded bg-[#090B0E] border border-[#202630] space-y-2 text-xs font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+              <div className="flex justify-between text-[#626C79] text-[11px]">
                 <span>
-                  Scenario: <strong className="text-graphite-100">Hot-Record Read Spikes [SIMULATED]</strong>
+                  Scenario: <strong className="text-[#E8EAF0]">Hot-Record Read Spikes [SIMULATED]</strong>
                 </span>
                 <span>
-                  Target: <strong className="text-graphite-100">Reference Benchmark Model</strong>
+                  Target: <strong className="text-[#E8EAF0]">Reference Benchmark Model</strong>
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-graphite-600/60">
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#202630]">
                 <div>
-                  <span className="text-[10px] text-graphite-300 block">BASELINE p95</span>
-                  <span className="text-sm font-bold text-graphite-100 tabular-nums">18.45 ms</span>
+                  <span className="text-[10px] text-[#626C79] block">BASELINE p95</span>
+                  <span className="text-sm font-bold text-[#CBD5E1] tabular-nums">18.45 ms</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-graphite-300 block">CANDIDATE p95</span>
-                  <span className="text-sm font-bold text-brand-teal tabular-nums">12.10 ms</span>
+                  <span className="text-[10px] text-[#626C79] block">CANDIDATE p95</span>
+                  <span className="text-sm font-bold text-[#4E9F8E] tabular-nums">12.10 ms</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-graphite-300 block">LATENCY DELTA</span>
-                  <span className="text-sm font-bold text-status-success tabular-nums">-34.4%</span>
+                  <span className="text-[10px] text-[#626C79] block">LATENCY DELTA</span>
+                  <span className="text-sm font-bold text-[#34D399] tabular-nums">-34.4%</span>
                 </div>
               </div>
 
-              <p className="text-[11px] text-graphite-300 font-sans pt-1 italic">
+              <p className="text-[11px] text-[#626C79] font-sans pt-1 italic">
                 Reference demonstration baseline. Launch a candidate benchmark against a registered target to produce real comparative distributions.
               </p>
             </div>
@@ -833,42 +833,42 @@ export default function OverviewPage() {
           <div className="flex justify-end">
             <Link
               href="/compare"
-              className="text-xs font-mono text-brand-teal hover:underline flex items-center gap-1"
+              className="text-xs font-mono text-[#CBD5E1] hover:text-[#E8EAF0] hover:underline flex items-center gap-1 transition-colors"
             >
               <span>Full A/B Distribution Evidence</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-3 h-3 text-[#626C79]" />
             </Link>
           </div>
         </div>
 
         {/* Actionable Diagnosis */}
         <div className="panel p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-graphite-600 pb-2">
+          <div className="flex items-center justify-between border-b border-[#202630] pb-2">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-status-warning" />
-              <h3 className="text-xs font-semibold text-graphite-50 font-mono uppercase">
+              <AlertTriangle className="w-4 h-4 text-[#FBBF24]" />
+              <h3 className="text-xs font-semibold text-[#E8EAF0] font-mono uppercase tracking-tight">
                 Active Bottleneck Diagnosis
               </h3>
             </div>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-graphite-700 text-graphite-300 border border-graphite-600">
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#12161C] text-[#626C79] border border-[#202630]">
               SIMULATED HEURISTIC
             </span>
           </div>
 
           <div className="space-y-2 text-xs">
-            <div className="p-3 rounded bg-graphite-850 border border-status-warningBorder/60 space-y-1">
+            <div className="p-3 rounded bg-[#090B0E] border border-[#38290E] space-y-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
               <div className="flex items-center justify-between font-mono">
-                <span className="font-semibold text-status-warning">Sequential Scan on events table</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-status-warningSurface text-status-warning border border-status-warningBorder">
+                <span className="font-semibold text-[#FBBF24]">Sequential Scan on events table</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#191408] text-[#FBBF24] border border-[#38290E]">
                   HIGH IMPACT
                 </span>
               </div>
-              <p className="text-graphite-200 text-[11px] leading-relaxed">
-                Query <code className="text-brand-teal font-mono">f7d98b12e3a4</code> consumes 41.2% total time filtering by <code className="text-graphite-100 font-mono">user_id</code> and ordering by <code className="text-graphite-100 font-mono">created_at</code> without a matching composite index.
+              <p className="text-[#929AA6] text-[11px] leading-relaxed">
+                Query <code className="text-[#CBD5E1] font-mono">f7d98b12e3a4</code> consumes 41.2% total time filtering by <code className="text-[#E8EAF0] font-mono">user_id</code> and ordering by <code className="text-[#E8EAF0] font-mono">created_at</code> without a matching composite index.
               </p>
-              <div className="pt-1 flex items-center justify-between text-[11px] font-mono text-graphite-300">
-                <span>Proposed: <code className="text-graphite-100 font-mono">CREATE INDEX CONCURRENTLY...</code></span>
-                <Link href="/diagnosis" className="text-brand-teal hover:underline">
+              <div className="pt-1 flex items-center justify-between text-[11px] font-mono text-[#626C79]">
+                <span>Proposed: <code className="text-[#CBD5E1] font-mono">CREATE INDEX CONCURRENTLY...</code></span>
+                <Link href="/diagnosis" className="text-[#CBD5E1] hover:text-[#E8EAF0] hover:underline transition-colors">
                   Inspect DDL & Risk &rarr;
                 </Link>
               </div>

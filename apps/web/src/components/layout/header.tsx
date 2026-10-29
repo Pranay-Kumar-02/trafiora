@@ -56,66 +56,67 @@ export function Header() {
   }, []);
 
   return (
-    <header className="h-12 border-b border-graphite-600 bg-graphite-900 px-4 flex items-center justify-between sticky top-0 z-30 select-none">
+    <header className="h-11 sm:h-12 border-b border-[#202630] bg-[#090B0E] px-3.5 sm:px-4 flex items-center justify-between sticky top-0 z-30 select-none shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
       {/* Active Database Context & Operational Tier */}
-      <div className="flex items-center gap-2.5 text-xs font-mono">
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-graphite-800 border border-graphite-600 text-graphite-100">
-          <Database className="w-3.5 h-3.5 text-brand-teal" />
+      <div className="flex items-center gap-2 sm:gap-2.5 text-xs font-mono overflow-x-auto py-0.5">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0D1014] border border-[#202630] text-[#E8EAF0] shrink-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+          <Database className="w-3.5 h-3.5 text-[#4E9F8E]" />
           {activeConn ? (
             <>
-              <span className="font-semibold text-graphite-50">{activeConn.host}</span>
-              <span className="text-graphite-400">:{activeConn.port}/{activeConn.database_name}</span>
+              <span className="font-semibold text-[#E8EAF0]">{activeConn.host}</span>
+              <span className="text-[#626C79]">:{activeConn.port}/{activeConn.database_name}</span>
             </>
           ) : (
-            <span className="text-graphite-300">No Target DB Configured</span>
+            <span className="text-[#626C79]">No Target DB Configured</span>
           )}
         </div>
 
         {/* Operational Safety Tier */}
-        {activeConn ? (
-          activeConn.operational_tier === "tier_1_read_only" ? (
-            <Badge variant="tier1">Tier 1: Read-Only Observation Only</Badge>
-          ) : activeConn.operational_tier === "tier_3_administrative_mutation" ? (
-            <Badge variant="tier3">Tier 3: Disposable Sandbox</Badge>
+        <div className="shrink-0">
+          {activeConn ? (
+            activeConn.operational_tier === "tier_1_read_only" ? (
+              <Badge variant="tier1">Tier 1: Read-Only Observation</Badge>
+            ) : activeConn.operational_tier === "tier_3_administrative_mutation" ? (
+              <Badge variant="tier3">Tier 3: Disposable Sandbox</Badge>
+            ) : (
+              <Badge variant="tier2">Tier 2: Authorized Benchmark</Badge>
+            )
           ) : (
-            <Badge variant="tier2">Tier 2: Authorized Benchmark Target</Badge>
-          )
-        ) : (
-          <Badge variant="neutral">Unconnected Target</Badge>
-        )}
+            <Badge variant="neutral">Unconnected Target</Badge>
+          )}
+        </div>
 
         {/* Telemetry Freshness */}
-        <div className="hidden md:flex items-center gap-1 text-[11px] text-graphite-300">
-          <Clock className="w-3 h-3 text-graphite-400" />
+        <div className="hidden lg:flex items-center gap-1 text-[11px] text-[#626C79] shrink-0">
+          <Clock className="w-3 h-3 text-[#626C79]" />
           <span>Refreshed: {freshness}</span>
         </div>
       </div>
 
-
       {/* Control Plane Status & Global Action */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
         {/* API Health */}
         <div className="flex items-center gap-1.5 text-xs font-mono">
           <span
             className={`w-1.5 h-1.5 rounded-full ${
               apiOnline === true
-                ? "bg-status-success animate-pulse"
+                ? "bg-[#34D399]"
                 : apiOnline === false
-                ? "bg-status-error"
-                : "bg-graphite-400"
+                ? "bg-[#FB7185]"
+                : "bg-[#626C79]"
             }`}
           />
-          <span className="text-graphite-200 hidden sm:inline text-[11px]">
+          <span className="text-[#929AA6] hidden sm:inline text-[11px]">
             {apiOnline === true ? "Control Plane: Active" : "Control Plane: Offline"}
           </span>
         </div>
 
-        {/* Contextual Action */}
+        {/* Precision Hardware Contextual Action */}
         <Link
           href="/experiments"
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand-teal text-graphite-950 font-semibold text-xs hover:bg-brand-tealLight transition-colors shadow-subtle"
+          className="flex items-center gap-1.5 px-3 py-1 rounded bg-[#12161C] hover:bg-[#191E25] text-[#E8EAF0] border border-[#28323F] hover:border-[#364354] font-medium text-xs transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)]"
         >
-          <Play className="w-3 h-3 fill-current" />
+          <Play className="w-3 h-3 text-[#4E9F8E] fill-[#4E9F8E]" />
           <span>Run Experiment</span>
         </Link>
       </div>
