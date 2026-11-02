@@ -128,3 +128,4 @@ Follow this structured, 10-minute presentation sequence:
    - Primary target is PostgreSQL 16, 17, and 18 with `pg_stat_statements` enabled.
 3. **pgbench Subprocess vs. Native Driver:**
    - If `pgbench` command-line binary is not installed on the host OS, Trafiora seamlessly uses its native async `psycopg` worker pool to execute concurrent queries with exact timestamp latency tracking.
+
