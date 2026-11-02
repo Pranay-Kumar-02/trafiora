@@ -32,6 +32,7 @@ import { apiClient } from "@/lib/api-client";
 import {
   DEMO_SCENARIOS,
   DemoScenario,
+  DemoScenarioId,
   DemoWorkloadQuery,
   DemoBottleneck,
 } from "@/lib/demo-data";
@@ -99,7 +100,7 @@ export default function OverviewPage() {
 
   // Demo Mode state
   const [demoMode, setDemoMode] = useState<boolean>(true);
-  const [selectedScenarioKey, setSelectedScenarioKey] = useState<"normal" | "traffic_spike" | "query_regression">("normal");
+  const [selectedScenarioKey, setSelectedScenarioKey] = useState<DemoScenarioId>("normal");
   const [querySearch, setQuerySearch] = useState<string>("");
   const [selectedQuery, setSelectedQuery] = useState<UnifiedWorkloadQuery | null>(null);
 
@@ -324,7 +325,7 @@ export default function OverviewPage() {
                 }`}
               >
                 <CheckCircle2 className="w-3 h-3" />
-                <span>1. Normal Traffic</span>
+                <span>1. Normal</span>
               </button>
               <button
                 onClick={() => setSelectedScenarioKey("traffic_spike")}
@@ -335,7 +336,29 @@ export default function OverviewPage() {
                 }`}
               >
                 <Flame className="w-3 h-3" />
-                <span>2. Traffic Spike (Pool Saturation)</span>
+                <span>2. Traffic Spike</span>
+              </button>
+              <button
+                onClick={() => setSelectedScenarioKey("slow_query")}
+                className={`px-2.5 py-1 rounded text-[11px] transition-colors font-medium flex items-center gap-1.5 shrink-0 ${
+                  selectedScenarioKey === "slow_query"
+                    ? "bg-[#191008] text-[#FB923C] border border-[#38210E] shadow-sm"
+                    : "text-[#626C79] hover:text-[#929AA6]"
+                }`}
+              >
+                <TrendingDown className="w-3 h-3" />
+                <span>3. Slow Query</span>
+              </button>
+              <button
+                onClick={() => setSelectedScenarioKey("pool_saturation")}
+                className={`px-2.5 py-1 rounded text-[11px] transition-colors font-medium flex items-center gap-1.5 shrink-0 ${
+                  selectedScenarioKey === "pool_saturation"
+                    ? "bg-[#190C16] text-[#E879F9] border border-[#381132] shadow-sm"
+                    : "text-[#626C79] hover:text-[#929AA6]"
+                }`}
+              >
+                <Database className="w-3 h-3" />
+                <span>4. Pool Saturation</span>
               </button>
               <button
                 onClick={() => setSelectedScenarioKey("query_regression")}
@@ -346,7 +369,18 @@ export default function OverviewPage() {
                 }`}
               >
                 <AlertTriangle className="w-3 h-3" />
-                <span>3. Query Regression</span>
+                <span>5. Regression</span>
+              </button>
+              <button
+                onClick={() => setSelectedScenarioKey("optimization_comparison")}
+                className={`px-2.5 py-1 rounded text-[11px] transition-colors font-medium flex items-center gap-1.5 shrink-0 ${
+                  selectedScenarioKey === "optimization_comparison"
+                    ? "bg-[#0E1A16] text-[#4E9F8E] border border-[#173B2B] shadow-sm"
+                    : "text-[#626C79] hover:text-[#929AA6]"
+                }`}
+              >
+                <Zap className="w-3 h-3" />
+                <span>6. Comparison</span>
               </button>
             </div>
           </div>
