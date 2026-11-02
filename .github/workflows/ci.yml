@@ -38,7 +38,15 @@ jobs:
       - name: Wait for PostgreSQL readiness and initialize extensions
         run: |
           echo "Waiting for PostgreSQL engine to be ready..."
-          until docker exec trafiora-postgres pg_isready -U trafiora_tester -d trafiora_test_db; do
+          for i in $(seq 1 60); do
+            if docker exec trafiora-postgres psql -U trafiora_tester -d postgres -c "SELECT 1" >/dev/null 2>&1; then
+              docker exec trafiora-postgres psql -U trafiora_tester -d postgres -c "CREATE DATABASE trafiora_test_db;" >/dev/null 2>&1 || true
+            fi
+            if docker exec trafiora-postgres psql -U trafiora_tester -d trafiora_test_db -c "SELECT 1" >/dev/null 2>&1; then
+              echo "PostgreSQL is ready and database trafiora_test_db is accessible."
+              break
+            fi
+            echo "Waiting for database initialization... ($i/60)"
             sleep 1
           done
           echo "Enabling pg_stat_statements extension on real engine..."
